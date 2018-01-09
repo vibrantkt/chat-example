@@ -1,0 +1,48 @@
+buildscript {
+    ext.kotlin_version = '1.2.10'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+group 'org.vibrant.example'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'kotlin'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    compile 'org.jetbrains.kotlinx:kotlinx-coroutines-core:0.21'
+
+    compile 'com.fasterxml.jackson.module:jackson-module-kotlin:2.9.2'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.9.0'
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    compile 'io.github.microutils:kotlin-logging:1.4.9'
+
+    compile 'com.github.vibrantkt:core:0.1.2-alpha'
+
+    testCompile 'junit:junit:4.12'
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+kotlin {
+    experimental {
+        coroutines "enable"
+    }
+}
