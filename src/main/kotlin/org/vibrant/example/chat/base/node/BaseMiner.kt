@@ -11,7 +11,7 @@ import java.util.concurrent.CountDownLatch
 class BaseMiner(port: Int) : BaseNode(port){
 
 
-    private var latch = CountDownLatch(1)
+    private var awaitTransactionsLatch = CountDownLatch(1)
 
     private val pendingTransactions = arrayListOf<BaseTransactionModel>()
 
@@ -20,7 +20,8 @@ class BaseMiner(port: Int) : BaseNode(port){
 
     fun addTransaction(transactionModel: BaseTransactionModel){
         this.pendingTransactions.add(transactionModel)
-        latch.countDown()
+        logger.info { "I GOT A FUCKING TRANSACTION!!!!" }
+        awaitTransactionsLatch.countDown()
     }
 
 
@@ -43,15 +44,18 @@ class BaseMiner(port: Int) : BaseNode(port){
             ))
             logger.info { "Awaited this shit! $response" }
         }
-        this.onMined.forEach { it(block) }
+        this.onMined.forEach {
+            logger.info { "Notifying handlers..." }
+            it(block)
+        }
     }
 
 
     internal fun startMineLoop() {
         while(true){
-            latch.await()
+            awaitTransactionsLatch.await()
             this@BaseMiner.mine()
-            latch = CountDownLatch(1)
+            awaitTransactionsLatch = CountDownLatch(1)
         }
     }
 }

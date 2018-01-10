@@ -11,7 +11,13 @@ import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import org.vibrant.core.node.AbstractNode
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.core.producers.BlockChainProducer
+import org.vibrant.core.reducers.SignatureProducer
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
+import org.vibrant.example.chat.base.models.BaseMessageModel
+import org.vibrant.example.chat.base.producers.BaseTransactionProducer
+import org.vibrant.example.chat.base.util.HashUtils
+import java.security.KeyPair
+import java.util.*
 
 open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChainProducer>() {
     protected var requestID = 0L
@@ -21,6 +27,12 @@ open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, B
     internal val peer = Peer(port, this)
 
     internal val possibleAheads = arrayListOf<RemoteNode>()
+
+
+    val onNextBlock = arrayListOf<(BaseBlockModel) -> Unit>()
+
+
+    var keyPair: KeyPair? = null
 
     override fun start() {
         this.peer.start()
@@ -36,6 +48,13 @@ open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, B
             if(latestBlock != lastBlock){
                 logger.info { "My chain is not in sync with peer $remoteNode" }
                 when {
+                    lastBlock.index - latestBlock.index == 1L  && lastBlock.prevHash == latestBlock.hash -> {
+                        this@BaseNode.chain.pushBlock(
+                                lastBlock
+                        )
+                        this@BaseNode.onNextBlock.forEach { it(lastBlock) }
+                        logger.info { "I just got next block. Chain good: ${chain.checkIntegrity()}" }
+                    }
                     lastBlock.index > latestBlock.index -> {
                         logger.info { "My chain is behind, requesting full chain" }
                         val chainResponse = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getFullChain", arrayOf(), requestID++))  as JSONRPCResponse<*>
@@ -77,8 +96,28 @@ open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, B
         }
     }
 
-    val chain: BaseBlockChainProducer = BaseBlockChainProducer()
+    val chain: BaseBlockChainProducer = BaseBlockChainProducer(difficulty = 4)
 
+
+    suspend fun transaction(to: String, payload: String): List<JSONRPCResponse<*>> {
+        val transaction = BaseTransactionProducer(
+                HashUtils.bytesToHex(this@BaseNode.keyPair!!.public.encoded),
+                to,
+                BaseMessageModel(payload, Date().time),
+                this@BaseNode.keyPair!!,
+                object : SignatureProducer {
+                    override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
+                        return HashUtils.signData(content, keyPair)
+                    }
+                }
+        ).produce(BaseJSONSerializer())
+
+        return this.peer.broadcastMiners(JSONRPCRequest(
+                method = "addTransaction",
+                params = arrayOf(BaseJSONSerializer().serialize(transaction)),
+                id = this.requestID++
+        ))
+    }
 
     override fun connect(remoteNode: RemoteNode): Boolean {
         return runBlocking {

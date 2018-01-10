@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <style>
+        .chat{
+            display: flex;
+            flex-direction: column;
+        }
+
+        #connected{
+            padding: 10px;
+        }
+
+        #connected .address{
+            border: 1px solid blue;
+        }
+
+        #chat{
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message{
+            display: flex;
+            flex-direction: row;
+        }
+
+        .message .payload{
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+
+<body>
+
+
+<div class="chat">
+
+    <div id="chat"></div>
+    <input id="address" />
+    <textarea name="" cols="30" rows="10" id="message" placeholder="message"></textarea>
+
+
+</div>
+<button onclick="sendTransaction()">Send message</button>
+
+<div class="connect">
+    <div id="connected"></div>
+    <input type="text" id="socketAddress" value="localhost:7003"/>
+    <button onclick="connect()">Connect</button>
+</div>
+
+
+<script>
+    let transactions = [];
+    let connected = [];
+
+    fetch("/messages").then(e => e.json()).then(json => {
+        transactions = json["messages"]
+        refreshChat()
+    });
+
+    function connect() {
+        const address = document.getElementById("socketAddress").value;
+        fetch("/command", {method: "post", body: JSON.stringify({command: `connect ${address}`})}).then(e => e.text()).then(json => {
+            if(json === "true"){
+                connected.push(address);
+                document.getElementById("connected").innerHTML = connected.map(address => {
+                    return `<div class="address">${address}</div>`
+                }).join("")
+            }
+        });
+    }
+
+
+    function sendTransaction() {
+        const address = document.getElementById("address").value;
+        const message = document.getElementById("message").value
+        fetch("/command", {method:"post", body: JSON.stringify({command: `transaction ${address} ${message}`})}).then(e => e.json()).then(json => {
+            refreshChat();
+        });
+    }
+
+    function refreshChat() {
+        document.getElementById("chat").innerHTML = transactions.map(tr => {
+            return `<div class="message">
+<div class="author">${tr.from.substring(0, 10)}</div>
+<div class="payload">${tr.payload.content}</div>
+</div>`
+        }).join("");
+    }
+
+    const socket = new WebSocket(`ws://${document.location.host}/event`);
+    socket.onopen = function() {
+        console.log("Session ready")
+    };
+
+    socket.onclose = function(event) {
+        console.log("Session closed")
+    };
+
+    socket.onmessage = function(event) {
+        const json = JSON.parse(event.data);
+        transactions = transactions.concat(json.messages);
+        refreshChat();
+    };
+
+    socket.onerror = function(error) {
+        console.log("Error lul")
+    };
+</script>
+</body>
+</html>
