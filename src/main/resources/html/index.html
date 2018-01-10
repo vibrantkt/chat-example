@@ -3,22 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.3.5"></script>
 
     <style>
-        .chat{
+        .peer{
+            background: #9fdada;
+        }
+        .peer.miner{
+            background-color: #fffbbc;
+        }
+
+        .nodes{
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
         }
 
-        #connected{
-            padding: 10px;
+        .nodes .peers{
+            margin: 5px;
         }
 
-        #connected .address{
-            border: 1px solid blue;
+        .nodes .miners{
+            margin: 5px;
         }
 
-        #chat{
+        .chat{
             display: flex;
             flex-direction: column;
         }
@@ -28,8 +37,17 @@
             flex-direction: row;
         }
 
-        .message .payload{
-            margin-left: 10px;
+        .message .content{
+            padding: 5px;
+        }
+
+        .message .author{
+            padding: 5px;
+            background-color: #bffff8;
+        }
+
+        .message .author.from-me{
+            background-color: #ffd1e7;
         }
     </style>
 </head>
@@ -37,81 +55,213 @@
 
 <body>
 
-
-<div class="chat">
-
-    <div id="chat"></div>
-    <input id="address" />
-    <textarea name="" cols="30" rows="10" id="message" placeholder="message"></textarea>
-
-
-</div>
-<button onclick="sendTransaction()">Send message</button>
-
-<div class="connect">
-    <div id="connected"></div>
-    <input type="text" id="socketAddress" value="localhost:7003"/>
-    <button onclick="connect()">Connect</button>
-</div>
-
+<div id="app"></div>
 
 <script>
-    let transactions = [];
-    let connected = [];
 
-    fetch("/messages").then(e => e.json()).then(json => {
-        transactions = json["messages"]
-        refreshChat()
+    const app = new Vue({
+        el: '#app',
+        data: {
+            account: {
+                "public": "XXX",
+                "peers": [],
+                "miners": []
+            },
+            blockchain: {
+                blocks: []
+            },
+            nodeAddress: "",
+            newName: "",
+            targetAddress: "",
+            targetMessage: "",
+            selectedParticipant: null,
+            sendNew: false
+        },
+        template: `
+<div>
+    <h1>Аккаунт "{{currentName}}"</h1>
+    <h4>Адрес</h4>
+    <h4>{{account.public}}</h4>
+    <h2>История имен:</h2>
+    <ul class="nickname">
+        <li class="nickname" v-for="nickname in names">
+            {{nickname.payload.name}}
+        </li>
+    </ul>
+    <div class="nodes">
+        <div class="peers">
+            <div class="peer" v-for="peer in peers">
+                <div>NODE {{peer.peer}}</div>
+            </div>
+        </div>
+        <div class="miners">
+            <div class="peer miner" v-for="peer in miners">
+                <div>MINER {{peer.peer}}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="connect">
+        <input type="text" v-model="nodeAddress" />
+        <button @click="connect">Connect</button>
+    </div>
+
+
+    <hr />
+
+
+    <div class="change-name">
+        <input type="text" v-model="newName" />
+        <button @click="changeName">Change name</button>
+    </div>
+
+    <hr />
+
+
+    <div class="chat">
+        <div class="send-new">
+            <input type="checkbox" v-model="sendNew"  id="send-new"/>
+            <label for="send-new">Отправить новому собеседнику</label>
+        </div>
+        <input type="text" v-model="targetAddress" v-if="sendNew" placeholder="Адрес"/>
+        <select name="" id="" v-model="selectedParticipant" v-else>
+                <option :value="participant.address" v-for="participant in participants">{{participant.name}}</option>
+        </select>
+        <textarea v-model="targetMessage" placeholder="Сообщение"></textarea>
+        <div class="message" v-for="message in messages">
+            <div class="author" :class="{'from-me': message.fromAddress === account.public}">{{message.from}}</div>
+            <div class="content">{{message.message}}</div>
+        </div>
+        <button @click="sendMessage">Отправить</button>
+    </div>
+
+
+</div>
+        `,
+        methods: {
+            connect(){
+                this.$http.post('/command', {
+                    command: `connect ${this.nodeAddress}`
+                }).then(response => {
+                    this.refreshAccount();
+                }, response => {
+                    // error callback
+                });
+            },
+            refreshAccount(){
+                this.$http.get('/account').then(response => {
+                    this.account = response.body
+                }, response => {
+                    // error callback
+                });
+            },
+            changeName(){
+                this.$http.post('/command', {
+                    command: `account ${this.newName}`
+                }).then(response => {
+
+                }, response => {
+                    // error callback
+                });
+            },
+            refreshBlockChain(){
+                this.$http.get('/blockchain').then(response => {
+                    this.blockchain = response.body["blockchain"]
+                    this.selectedParticipant = this.participants.length === 0 ? "" : this.participants[this.participants.length - 1].address;
+                }, response => {
+                    // error callback
+                });
+            },
+            sendMessage(){
+                this.$http.post('/command', {
+                    command: `transaction ${this.sendNew && this.targetAddress || this.selectedParticipant} ${this.targetMessage}`
+                }).then(response => {
+
+                }, response => {
+                    // error callback
+                });
+            },
+            nameOf(address){
+                const names = this.blockchain.blocks.map(block => {
+                    return block.transactions
+                }).reduce((a, b) => a.concat(b), []).filter(it => {
+                    return it.payload["@type"] === "account-meta-data" && it.from === address
+                });
+
+                return names.length === 0 ?  address : names[names.length - 1].payload.name;
+            }
+        },
+        computed: {
+            peers(){
+                return this.account.peers.map(e => ({type: "peer", peer: e.address + ':' + e.port}));
+            },
+            miners(){
+                return this.account.miners.map(e => ({ type: "miner", peer: e.address + ':' + e.port}));
+            },
+            names(){
+                return this.blockchain.blocks.map(block => {
+                    return block.transactions
+                }).reduce((a, b) => a.concat(b), []).filter(it => {
+                    return it.payload["@type"] === "account-meta-data" && it.from === this.account.public
+                });
+            },
+            currentName(){
+                return this.nameOf(this.account.public);
+            },
+            participants(){
+                return this.blockchain.blocks.map(block => {
+                    return block.transactions
+                }).reduce((a, b) => a.concat(b), []).filter(it => {
+                    return it.payload["@type"] === "message" && (it.from === this.account.public || it.to === this.account.public)
+                }).map(it => {
+                    return {
+                        address: it.from === this.account.public && it.to || it.from,
+                        name: this.nameOf(it.from === this.account.public && it.to || it.from)
+                    }
+                })
+            },
+            messages(){
+                return this.blockchain.blocks.map(block => {
+                    return block.transactions
+                }).reduce((a, b) => a.concat(b), []).filter(it => {
+                    return it.payload["@type"] === "message"
+                        && (it.from === this.account.public || it.to === this.account.public)
+                        && (it.from === this.selectedParticipant || it.to === this.selectedParticipant)
+                }).map(transaction => {
+                    return {
+                        fromAddress: transaction.from,
+                        toAddress: transaction.to,
+                        "from": this.nameOf(transaction.from),
+                        "to": this.nameOf(transaction.to),
+                        "message": transaction.payload.content
+                    }
+                });
+            }
+        },
+        mounted(){
+            this.refreshAccount();
+            this.refreshBlockChain();
+            const socket = new WebSocket(`ws://${document.location.host}/event`);
+            socket.onopen = function() {
+                console.log("Session ready")
+            };
+
+            socket.onclose = function(event) {
+                console.log("Session closed")
+            };
+
+            socket.onmessage = (event) => {
+                const json = JSON.parse(event.data);
+                this.blockchain.blocks.push(json);
+            };
+
+
+            socket.onerror = function(error) {
+                console.log("Error lul")
+            };
+        }
     });
 
-    function connect() {
-        const address = document.getElementById("socketAddress").value;
-        fetch("/command", {method: "post", body: JSON.stringify({command: `connect ${address}`})}).then(e => e.text()).then(json => {
-            if(json === "true"){
-                connected.push(address);
-                document.getElementById("connected").innerHTML = connected.map(address => {
-                    return `<div class="address">${address}</div>`
-                }).join("")
-            }
-        });
-    }
-
-
-    function sendTransaction() {
-        const address = document.getElementById("address").value;
-        const message = document.getElementById("message").value
-        fetch("/command", {method:"post", body: JSON.stringify({command: `transaction ${address} ${message}`})}).then(e => e.json()).then(json => {
-            refreshChat();
-        });
-    }
-
-    function refreshChat() {
-        document.getElementById("chat").innerHTML = transactions.map(tr => {
-            return `<div class="message">
-<div class="author">${tr.from.substring(0, 10)}</div>
-<div class="payload">${tr.payload.content}</div>
-</div>`
-        }).join("");
-    }
-
-    const socket = new WebSocket(`ws://${document.location.host}/event`);
-    socket.onopen = function() {
-        console.log("Session ready")
-    };
-
-    socket.onclose = function(event) {
-        console.log("Session closed")
-    };
-
-    socket.onmessage = function(event) {
-        const json = JSON.parse(event.data);
-        transactions = transactions.concat(json.messages);
-        refreshChat();
-    };
-
-    socket.onerror = function(error) {
-        console.log("Error lul")
-    };
 </script>
 </body>
 </html>

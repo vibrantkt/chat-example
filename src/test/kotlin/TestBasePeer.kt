@@ -1,4 +1,5 @@
 import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.newSingleThreadContext
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -14,6 +15,7 @@ import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.security.KeyPair
+import java.util.concurrent.CountDownLatch
 import kotlin.coroutines.experimental.suspendCoroutine
 
 class TestBasePeer {
@@ -151,29 +153,30 @@ class TestBasePeer {
 
         miner.connect(RemoteNode("localhost", 7000))
 
-        val change = async {
-            suspendCoroutine<Unit> { s ->
-                node.chain.onChange.add { _ ->
-                    s.resume(Unit)
-                }
-            }
+
+        val latch1 = CountDownLatch(1)
+        node.chain.onChange.add {
+            println("Chain changed somehow!!!")
+            latch1.countDown()
         }
+
+        println("Before synchronizing")
 
         miner.synchronize(RemoteNode("localhost", 7000))
+        println("After synchronizing")
 
-        runBlocking {
-            change.await()
-        }
+//        latch1.await()
+
+        println("Awaited")
+
 
         assertEquals(
                 miner.chain.produce(BaseJSONSerializer()),
                 node.chain.produce(BaseJSONSerializer())
         )
 
-
         node.stop()
         miner.stop()
-
 
     }
 
@@ -207,7 +210,7 @@ class TestBasePeer {
         )
 
         assertEquals(
-                "0",
+                "0".repeat(miner.chain.difficulty),
                 chain.blocks[1].hash.substring(0, miner.chain.difficulty)
         )
 
@@ -244,6 +247,10 @@ class TestBasePeer {
         miner.synchronize(RemoteNode("localhost", 7000))
 
 
+        val thread = async(newSingleThreadContext("miner loop")) {
+            miner.startMineLoop()
+        }
+
         runBlocking {
             val response = node.peer.request(RemoteNode("localhost", 7001), JSONRPCRequest(
                     method = "addTransaction",
@@ -257,14 +264,11 @@ class TestBasePeer {
                     response.result
             )
 
-            suspendCoroutine<Unit>{ r->
-                async {
-                    miner.startMineLoop()
-                }
-                miner.onMined.add{
-                    r.resume(Unit)
-                }
+            val latch = CountDownLatch(1)
+            miner.onMined.add{
+                latch.countDown()
             }
+            latch.await()
 
             // block is mined
             assertEquals(
@@ -284,6 +288,7 @@ class TestBasePeer {
         }
 
 
+        thread.cancel()
         node.stop()
         miner.stop()
 

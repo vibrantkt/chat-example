@@ -3,6 +3,7 @@ import org.junit.Test
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
 import org.vibrant.core.reducers.SignatureProducer
 import org.vibrant.example.chat.base.BaseJSONSerializer
+import org.vibrant.example.chat.base.models.BaseAccountMetaDataModel
 import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.util.AccountUtils
@@ -48,6 +49,45 @@ class TestBaseTransaction {
         )
 
     }
+
+
+    @Test
+    fun `Base transaction producer 2`() {
+        val sender = AccountUtils.generateKeyPair()
+        val transaction = BaseTransactionProducer(
+                "yura",
+                "vasya",
+                BaseAccountMetaDataModel("Yurii", 0),
+                sender,
+                object : SignatureProducer{
+                    override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
+                        return HashUtils.signData(content, keyPair)
+                    }
+                }
+        ).produce(BaseJSONSerializer())
+
+        assertEquals(
+                "yura",
+                transaction.from
+        )
+
+        assertEquals(
+                "vasya",
+                transaction.to
+        )
+
+        assertEquals(
+                BaseAccountMetaDataModel("Yurii", 0),
+                transaction.payload
+        )
+
+        assertEquals(
+                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer().serialize(BaseAccountMetaDataModel("Yurii", 0)), sender)),
+                transaction.signature
+        )
+
+    }
+
 
     @Test
     fun `Base transaction deserialization`() {

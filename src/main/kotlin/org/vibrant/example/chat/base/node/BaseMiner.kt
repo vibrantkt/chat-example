@@ -25,7 +25,6 @@ class BaseMiner(port: Int) : BaseNode(port){
     }
 
 
-
     internal fun mine(){
         val timestamp = Date().time
         val block = this.chain.pushBlock(this.chain.createBlock(

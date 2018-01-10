@@ -2,9 +2,7 @@ package org.vibrant.example.chat.base.models
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName
-import org.vibrant.core.models.Model
-
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY)
-@JsonTypeName("message")
-data class BaseMessageModel(val content: String, override val timestamp: Long): TransactionPayload(timestamp)
+@JsonTypeName("account-meta-data")
+data class BaseAccountMetaDataModel(val name: String, override val timestamp: Long): TransactionPayload(timestamp)

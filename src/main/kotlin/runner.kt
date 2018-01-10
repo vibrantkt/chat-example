@@ -5,16 +5,15 @@ import org.vibrant.example.chat.base.util.AccountUtils
 
 
 fun main(args: Array<String>) {
-    val chat = Chat()
-    chat.setAccount(AccountUtils.generateKeyPair())
-
-    val chat2 = Chat()
-    chat2.setAccount(AccountUtils.generateKeyPair())
 
 
-    val miner = Chat(true)
+    val isMiner = readLine() == "true"
 
-    async { (miner.node as BaseMiner).startMineLoop() }
+    val client = Chat(isMiner)
+    if (!isMiner)
+        client.setAccount(AccountUtils.generateKeyPair())
+    else
+        async { (client.node as BaseMiner).startMineLoop() }
 
 
 }

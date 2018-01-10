@@ -19,6 +19,6 @@ import org.vibrant.core.models.TransactionModel
 data class BaseTransactionModel(
         val from: String,
         val to: String,
-        val payload: BaseMessageModel,
+        val payload: TransactionPayload,
         val signature: String
 ): TransactionModel()

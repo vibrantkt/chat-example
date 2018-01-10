@@ -4,7 +4,7 @@ import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.result.Result
 import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.runBlocking
+import kotlinx.coroutines.experimental.newSingleThreadContext
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.vibrant.example.chat.base.BaseJSONSerializer
@@ -43,6 +43,9 @@ class TestCLI {
                 chat2.node.peer.peers.size
         )
 
+
+        chat1.stop()
+        chat2.stop()
     }
 
 
@@ -56,7 +59,12 @@ class TestCLI {
 
         chat1.handleCommand("auth ${tmpFile.absolutePath}")
 
+        assertEquals(
+                chat1.node.keyPair!!.private,
+                keyPair.private
+        )
 
+        chat1.stop()
     }
 
 
@@ -65,7 +73,7 @@ class TestCLI {
         val chat1 = Chat()
         val miner = Chat(true)
 
-        async {
+        val minerC = async(newSingleThreadContext("miner loop")) {
             (miner.node as BaseMiner).startMineLoop()
         }
 
@@ -90,30 +98,97 @@ class TestCLI {
         chat1.handleCommand("transaction ${HashUtils.bytesToHex(miner.node.keyPair!!.public.encoded)} hello")
 
 
-        runBlocking {
-            suspendCoroutine<Unit>{ r->
-                (miner.node as BaseMiner).onMined.add{
-                    r.resume(Unit)
-                }
-            }
+        val latch1 = CountDownLatch(1)
+        (miner.node as BaseMiner).onMined.add{
+            latch1.countDown()
+        }
+        latch1.await()
+        miner.node.onMined.clear()
 
 
-            assertEquals(
-                    miner.node.chain.produce(BaseJSONSerializer()),
-                    chat1.node.chain.produce(BaseJSONSerializer())
-            )
+        assertEquals(
+                miner.node.chain.produce(BaseJSONSerializer()),
+                chat1.node.chain.produce(BaseJSONSerializer())
+        )
 
-            assertEquals(
-                    2,
-                    miner.node.chain.blocks.size
-            )
+        assertEquals(
+                2,
+                miner.node.chain.blocks.size
+        )
 
-            assertEquals(
-                    2,
-                    chat1.node.chain.blocks.size
-            )
+        assertEquals(
+                2,
+                chat1.node.chain.blocks.size
+        )
+
+
+        minerC.cancel()
+        miner.stop()
+
+        chat1.stop()
+        miner.stop()
+    }
+
+
+    @Test
+    fun `Test account name transaction`(){
+        val chat1 = Chat()
+        val miner = Chat(true)
+
+        val minerC = async(newSingleThreadContext("miner loop")) {
+            (miner.node as BaseMiner).startMineLoop()
         }
 
+
+        chat1.node.keyPair = AccountUtils.generateKeyPair()
+        miner.node.keyPair = AccountUtils.generateKeyPair()
+
+
+        chat1.handleCommand("connect localhost:${miner.node.peer.port}")
+
+
+        assertEquals(
+                0,
+                miner.node.peer.miners.size
+        )
+
+        assertEquals(
+                1,
+                chat1.node.peer.miners.size
+        )
+
+        chat1.handleCommand("account NewName")
+
+
+        val latch1 = CountDownLatch(1)
+        (miner.node as BaseMiner).onMined.add{
+            latch1.countDown()
+        }
+        latch1.await()
+        miner.node.onMined.clear()
+
+
+        assertEquals(
+                miner.node.chain.produce(BaseJSONSerializer()),
+                chat1.node.chain.produce(BaseJSONSerializer())
+        )
+
+        assertEquals(
+                2,
+                miner.node.chain.blocks.size
+        )
+
+        assertEquals(
+                2,
+                chat1.node.chain.blocks.size
+        )
+
+
+        minerC.cancel()
+        miner.stop()
+
+        chat1.stop()
+        miner.stop()
     }
 
 
@@ -154,114 +229,108 @@ class TestCLI {
 
         chat1.handleCommand("transaction ${HashUtils.bytesToHex(miner.node.keyPair!!.public.encoded)} hello")
 
+        val latch1 = CountDownLatch(1)
+        (miner.node as BaseMiner).onMined.add{
+            latch1.countDown()
+        }
+        latch1.await()
+        miner.node.onMined.clear()
 
-        runBlocking {
-            suspendCoroutine<Unit>{ r->
-                (miner.node as BaseMiner).onMined.add{
-                    println("I SHOULD BE RESUMED!!!!!!!!!!??")
-                    r.resume(Unit)
-                }
+
+
+        assertEquals(
+                miner.node.chain.produce(BaseJSONSerializer()),
+                chat1.node.chain.produce(BaseJSONSerializer())
+        )
+
+        assertEquals(
+                miner.node.chain.produce(BaseJSONSerializer()),
+                chat2.node.chain.produce(BaseJSONSerializer())
+        )
+
+        assertEquals(
+                2,
+                miner.node.chain.blocks.size
+        )
+
+        assertEquals(
+                2,
+                chat1.node.chain.blocks.size
+        )
+        assertEquals(
+                2,
+                chat2.node.chain.blocks.size
+        )
+
+
+        val(_, _, result2) =  "http://localhost:${chat1.http.port()}/messages".httpGet().responseString()
+        when(result2){
+            is Result.Success -> {
+                val map: HashMap<String, Any> = jacksonObjectMapper().readValue(result2.get(), object : TypeReference<Map<String, Any>>(){})
+
+                val transactions = (map["messages"] as List<BaseTransactionModel>)
+                assertEquals(
+                        1,
+                        transactions.size
+                )
             }
-
-            (miner.node as BaseMiner).onMined.clear()
-
-
-            assertEquals(
-                    miner.node.chain.produce(BaseJSONSerializer()),
-                    chat1.node.chain.produce(BaseJSONSerializer())
-            )
-
-            assertEquals(
-                    miner.node.chain.produce(BaseJSONSerializer()),
-                    chat2.node.chain.produce(BaseJSONSerializer())
-            )
-
-            assertEquals(
-                    2,
-                    miner.node.chain.blocks.size
-            )
-
-            assertEquals(
-                    2,
-                    chat1.node.chain.blocks.size
-            )
-            assertEquals(
-                    2,
-                    chat2.node.chain.blocks.size
-            )
-
-
-            val(_, _, result) =  "http://localhost:${chat1.http.port()}/messages".httpGet().responseString()
-            when(result){
-                is Result.Success -> {
-                    val map: HashMap<String, Any> = jacksonObjectMapper().readValue(result.get(), object : TypeReference<Map<String, Any>>(){})
-
-                    val transactions = (map["messages"] as List<BaseTransactionModel>)
-                    assertEquals(
-                            1,
-                            transactions.size
-                    )
-                }
-                else -> {
-                    println("Fuckin ghsit")
-                }
-            }
+            else -> {}
         }
 
         chat1.handleCommand("transaction ${HashUtils.bytesToHex(chat2.node.keyPair!!.public.encoded)} hellothere")
+        val latch2 = CountDownLatch(1)
+        miner.node.onMined.add{
+            latch2.countDown()
+        }
+        latch2.await()
+        miner.node.onMined.clear()
 
-        runBlocking {
-            println("Suspending coroutine i guess")
-            val latch = CountDownLatch(1)
-            (miner.node as BaseMiner).onMined.add{
-                latch.countDown()
+        assertEquals(
+                miner.node.chain.produce(BaseJSONSerializer()),
+                chat1.node.chain.produce(BaseJSONSerializer())
+        )
+
+        assertEquals(
+                miner.node.chain.produce(BaseJSONSerializer()),
+                chat2.node.chain.produce(BaseJSONSerializer())
+        )
+
+        assertEquals(
+                3,
+                miner.node.chain.blocks.size
+        )
+
+        assertEquals(
+                3,
+                chat1.node.chain.blocks.size
+        )
+        assertEquals(
+                3,
+                chat2.node.chain.blocks.size
+        )
+
+
+        val(_, _, result) =  "http://localhost:${chat1.http.port()}/messages".httpGet().responseString()
+        when(result){
+            is Result.Success -> {
+                val map: HashMap<String, Any> = jacksonObjectMapper().readValue(result.get(), object : TypeReference<Map<String, Any>>(){})
+
+                val transactions = (map["messages"] as List<BaseTransactionModel>)
+                assertEquals(
+                        2,
+                        transactions.size
+                )
+
+                println(result.get())
             }
-            latch.await()
-//
-//
-            assertEquals(
-                    miner.node.chain.produce(BaseJSONSerializer()),
-                    chat1.node.chain.produce(BaseJSONSerializer())
-            )
-
-            assertEquals(
-                    miner.node.chain.produce(BaseJSONSerializer()),
-                    chat2.node.chain.produce(BaseJSONSerializer())
-            )
-
-            assertEquals(
-                    3,
-                    miner.node.chain.blocks.size
-            )
-
-            assertEquals(
-                    3,
-                    chat1.node.chain.blocks.size
-            )
-            assertEquals(
-                    3,
-                    chat2.node.chain.blocks.size
-            )
-
-
-            val(_, _, result) =  "http://localhost:${chat1.http.port()}/messages".httpGet().responseString()
-            when(result){
-                is Result.Success -> {
-                    val map: HashMap<String, Any> = jacksonObjectMapper().readValue(result.get(), object : TypeReference<Map<String, Any>>(){})
-
-                    val transactions = (map["messages"] as List<BaseTransactionModel>)
-                    assertEquals(
-                            2,
-                            transactions.size
-                    )
-
-                    println(result.get())
-                }
-                else -> {
-                    println("Fuckin ghsit")
-                }
+            else -> {
+                println("Fuckin ghsit")
             }
         }
+
+        chat1.stop()
+        chat2.stop()
+        miner.stop()
 
     }
 
@@ -314,11 +383,12 @@ class TestCLI {
                 command(chat1, "transaction ${chat2.hexAddress()} hello!")
         )
 
-        val latch = CountDownLatch(1)
+        val latch1 = CountDownLatch(1)
         (miner.node as BaseMiner).onMined.add{
-            latch.countDown()
+            latch1.countDown()
         }
-        latch.await()
+        latch1.await()
+        miner.node.onMined.clear()
 
         assertEquals(
                 2,
@@ -336,28 +406,28 @@ class TestCLI {
         )
 
 
-        runBlocking{
-            val(_, _, result) =  "http://localhost:${chat1.http.port()}/messages".httpGet().responseString()
-            val map: HashMap<String, Any> = jacksonObjectMapper().readValue(result.get(), object : TypeReference<Map<String, Any>>(){})
+        val(_, _, result) =  "http://localhost:${chat1.http.port()}/messages".httpGet().responseString()
+        val map: HashMap<String, Any> = jacksonObjectMapper().readValue(result.get(), object : TypeReference<Map<String, Any>>(){})
 
-            val transactions = (map["messages"] as List<BaseTransactionModel>)
-            assertEquals(
-                    1,
-                    transactions.size
-            )
-        }
+        val transactions = (map["messages"] as List<BaseTransactionModel>)
+        assertEquals(
+                1,
+                transactions.size
+        )
 
-        runBlocking{
-            val(_, _, result) =  "http://localhost:${chat2.http.port()}/messages".httpGet().responseString()
-            val map: HashMap<String, Any> = jacksonObjectMapper().readValue(result.get(), object : TypeReference<Map<String, Any>>(){})
+        val(_, _, result2) =  "http://localhost:${chat2.http.port()}/messages".httpGet().responseString()
+        val map2: HashMap<String, Any> = jacksonObjectMapper().readValue(result2.get(), object : TypeReference<Map<String, Any>>(){})
 
-            val transactions = (map["messages"] as List<BaseTransactionModel>)
-            assertEquals(
-                    1,
-                    transactions.size
-            )
-        }
+        val transactions2 = (map2["messages"] as List<BaseTransactionModel>)
+        assertEquals(
+                1,
+                transactions2.size
+        )
 
 
+
+        chat1.stop()
+        chat2.stop()
+        miner.stop()
     }
 }

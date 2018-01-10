@@ -8,13 +8,14 @@ import io.javalin.embeddedserver.jetty.websocket.WsSession
 import kotlinx.coroutines.experimental.runBlocking
 import mu.KotlinLogging
 import org.vibrant.core.node.RemoteNode
+import org.vibrant.example.chat.base.models.BaseAccountMetaDataModel
 import org.vibrant.example.chat.base.node.BaseMiner
 import org.vibrant.example.chat.base.node.BaseNode
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.io.File
 import java.security.KeyPair
-import java.util.HashMap
+import java.util.*
 
 class Chat(private val isMiner: Boolean = false){
 
@@ -32,11 +33,16 @@ class Chat(private val isMiner: Boolean = false){
         }
         ws.onClose { session, _, _ -> this@Chat.listeners.remove(session) }
         ws.onError { session, _ -> this@Chat.listeners.remove(session) }
-    }.get("messages"){ ctx ->
+    }.get("blockchain"){ ctx ->
         val map = hashMapOf<String, Any>()
-        map["messages"] = node.chain.blocks.flatMap {
-            it.transactions.filter { it.from ==  this@Chat.hexAddress() || it.to == this@Chat.hexAddress()}
-        }
+        map["blockchain"] = node.chain.produce(BaseJSONSerializer())
+        val response = jacksonObjectMapper().writeValueAsString(map)
+        ctx.result(response)
+    }.get("account"){ ctx ->
+        val map = hashMapOf<String, Any>()
+        map["public"] = this@Chat.hexAddress()
+        map["peers"] = this.node.peer.peers
+        map["miners"] = this.node.peer.miners
         val response = jacksonObjectMapper().writeValueAsString(map)
         ctx.result(response)
     }.post("command"){ ctx ->
@@ -56,12 +62,8 @@ class Chat(private val isMiner: Boolean = false){
         this.node.start()
         this.node.onNextBlock.add { block ->
             this.listeners.forEach{
-                val some = block.run {
-                    transactions.filter { it.from ==  this@Chat.hexAddress() || it.to == this@Chat.hexAddress()}
-                }
-                val map = hashMapOf<String, Any>()
-                map["messages"] = some
-                val response = jacksonObjectMapper().writeValueAsString(map)
+                val response = jacksonObjectMapper().writeValueAsString(block)
+                logger.info { response }
                 it.send(response)
             }
         }
@@ -94,9 +96,19 @@ class Chat(private val isMiner: Boolean = false){
                 val (address, payload) = parameters.split(Regex(" "), 2)
                 this@Chat.message(address, payload)
             }
+            "account" -> {
+                this@Chat.changeName(parameters)
+            }
             else -> {
                 logger.info { "Unrecognized command" }
             }
+        }
+    }
+
+    private fun changeName(name: String) {
+        runBlocking {
+            val response = node.transaction(this@Chat.hexAddress(), BaseAccountMetaDataModel(name, Date().time))
+            logger.info { "Transaction broadcasted $response" }
         }
     }
 
@@ -123,5 +135,10 @@ class Chat(private val isMiner: Boolean = false){
             val response = node.transaction(hexAddressTo, message)
             logger.info { "Transaction broadcasted $response" }
         }
+    }
+
+    fun stop(){
+        this.http.stop()
+        this.node.stop()
     }
 }

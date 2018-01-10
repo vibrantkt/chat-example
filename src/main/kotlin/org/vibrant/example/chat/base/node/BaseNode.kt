@@ -4,16 +4,13 @@ import kotlinx.coroutines.experimental.runBlocking
 import mu.KotlinLogging
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCRequest
-import org.vibrant.example.chat.base.models.BaseBlockChainModel
-import org.vibrant.example.chat.base.models.BaseBlockModel
-import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import org.vibrant.core.node.AbstractNode
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.core.producers.BlockChainProducer
 import org.vibrant.core.reducers.SignatureProducer
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
-import org.vibrant.example.chat.base.models.BaseMessageModel
+import org.vibrant.example.chat.base.models.*
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
 import org.vibrant.example.chat.base.util.HashUtils
 import java.security.KeyPair
@@ -96,7 +93,7 @@ open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, B
         }
     }
 
-    val chain: BaseBlockChainProducer = BaseBlockChainProducer(difficulty = 4)
+    val chain: BaseBlockChainProducer = BaseBlockChainProducer(difficulty = 2)
 
 
     suspend fun transaction(to: String, payload: String): List<JSONRPCResponse<*>> {
@@ -104,6 +101,27 @@ open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, B
                 HashUtils.bytesToHex(this@BaseNode.keyPair!!.public.encoded),
                 to,
                 BaseMessageModel(payload, Date().time),
+                this@BaseNode.keyPair!!,
+                object : SignatureProducer {
+                    override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
+                        return HashUtils.signData(content, keyPair)
+                    }
+                }
+        ).produce(BaseJSONSerializer())
+
+        return this.peer.broadcastMiners(JSONRPCRequest(
+                method = "addTransaction",
+                params = arrayOf(BaseJSONSerializer().serialize(transaction)),
+                id = this.requestID++
+        ))
+    }
+
+
+    suspend fun transaction(to: String, payload: TransactionPayload): List<JSONRPCResponse<*>>{
+        val transaction = BaseTransactionProducer(
+                HashUtils.bytesToHex(this@BaseNode.keyPair!!.public.encoded),
+                to,
+                payload,
                 this@BaseNode.keyPair!!,
                 object : SignatureProducer {
                     override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
