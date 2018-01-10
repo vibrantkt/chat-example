@@ -11,13 +11,14 @@ import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import org.vibrant.core.node.AbstractNode
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.core.producers.BlockChainProducer
+import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 
 open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChainProducer>() {
     protected var requestID = 0L
     protected val logger = KotlinLogging.logger {  }
 
     @Suppress("LeakingThis") internal val rpc = BaseJSONRPCProtocol(this)
-    internal val peer = BasePeer(port, this)
+    internal val peer = Peer(port, this)
 
     internal val possibleAheads = arrayListOf<RemoteNode>()
 
@@ -37,7 +38,7 @@ open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, B
                 when {
                     lastBlock.index > latestBlock.index -> {
                         logger.info { "My chain is behind, requesting full chain" }
-                        val chainResponse = this@BaseNode.peer.send(remoteNode, JSONRPCRequest("getFullChain", arrayOf(), requestID++))
+                        val chainResponse = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getFullChain", arrayOf(), requestID++))  as JSONRPCResponse<*>
                         val model = BaseJSONSerializer().deserialize(chainResponse.result.toString()) as BaseBlockChainModel
                         val tmpChain = BaseBlockChainProducer.instantiate(
                                 model
@@ -70,7 +71,7 @@ open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, B
     fun synchronize(remoteNode: RemoteNode){
         runBlocking {
             logger.info { "Requesting and waiting for response get last block" }
-            val response = this@BaseNode.peer.send(remoteNode, JSONRPCRequest("getLastBlock", arrayOf(), requestID++))
+            val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getLastBlock", arrayOf(), requestID++)) as JSONRPCResponse<*>
             val lastBlock = BaseJSONSerializer().deserialize(response.result.toString()) as BaseBlockModel
             this@BaseNode.handleLastBlock(lastBlock, remoteNode)
         }
@@ -81,8 +82,10 @@ open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, B
 
     override fun connect(remoteNode: RemoteNode): Boolean {
         return runBlocking {
-            val response1 = this@BaseNode.peer.send(remoteNode, JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++))
-            val response2 = this@BaseNode.peer.send(remoteNode, JSONRPCRequest("nodeType", arrayOf(), this@BaseNode.requestID++))
+//            val response1 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++))
+//            println(response1)
+            val response1 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++)) as JSONRPCResponse<*>
+            val response2 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("nodeType", arrayOf(), this@BaseNode.requestID++)) as JSONRPCResponse<*>
             return@runBlocking if(response1.result == "peer"){
                 this@BaseNode.peer.addUniqueRemoteNode(remoteNode, response2.result.toString() == "miner")
                 true

@@ -1,14 +1,15 @@
 package org.vibrant.example.chat.base.jsonrpc
 
+import org.vibrant.example.chat.base.BaseJSONSerializer
 import java.util.*
 
 
 data class JSONRPCRequest(
         val method: String,
         val params: Array<Any>,
-        val id: Long,
+        override val id: Long,
         val version: String = "2.0"
-): JSONRPCEntity() {
+): JSONRPCEntity(id) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

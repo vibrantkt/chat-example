@@ -10,6 +10,7 @@ import org.vibrant.example.chat.base.node.BaseNode
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.core.reducers.SignatureProducer
+import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.security.KeyPair
@@ -37,7 +38,7 @@ class TestBasePeer {
         // connection established
 
         assertEquals(
-                node.peer.allPeers.size,
+                node.peer.peers.size,
                 1
         )
 
@@ -47,7 +48,7 @@ class TestBasePeer {
         )
 
         assertEquals(
-                miner.peer.allPeers.size,
+                miner.peer.peers.size,
                 1
         )
 
@@ -244,11 +245,11 @@ class TestBasePeer {
 
 
         runBlocking {
-            val response = node.peer.send(RemoteNode("localhost", 7001), JSONRPCRequest(
+            val response = node.peer.request(RemoteNode("localhost", 7001), JSONRPCRequest(
                     method = "addTransaction",
                     params = arrayOf(BaseJSONSerializer().serialize(transaction)),
                     id = 5
-            ))
+            )) as JSONRPCResponse<*>
 
 
             assertEquals(

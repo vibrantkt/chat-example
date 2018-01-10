@@ -30,7 +30,8 @@ dependencies {
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
     compile 'io.github.microutils:kotlin-logging:1.4.9'
 
-    compile 'com.github.vibrantkt:core:0.1.2-alpha'
+    compile 'com.github.vibrantkt:core:0.1.45-alpha'
+
 
     testCompile 'junit:junit:4.12'
 }

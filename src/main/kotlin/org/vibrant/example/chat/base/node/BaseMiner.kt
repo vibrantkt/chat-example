@@ -36,7 +36,7 @@ class BaseMiner(port: Int) : BaseNode(port){
         this.pendingTransactions.clear()
         runBlocking {
             logger.info { "Broadcasting this block..." }
-            val response = this@BaseMiner.peer.broadcast(JSONRPCRequest(
+            val response = this@BaseMiner.peer.broadcastAll(JSONRPCRequest(
                     method = "newBlock",
                     params = arrayOf(BaseJSONSerializer().serialize(block)),
                     id = this@BaseMiner.requestID++
