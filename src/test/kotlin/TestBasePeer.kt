@@ -156,18 +156,12 @@ class TestBasePeer {
 
         val latch1 = CountDownLatch(1)
         node.chain.onChange.add {
-            println("Chain changed somehow!!!")
             latch1.countDown()
         }
 
-        println("Before synchronizing")
-
         miner.synchronize(RemoteNode("localhost", 7000))
-        println("After synchronizing")
 
-//        latch1.await()
-
-        println("Awaited")
+        latch1.await()
 
 
         assertEquals(

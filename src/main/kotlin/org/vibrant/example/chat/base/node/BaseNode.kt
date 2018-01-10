@@ -74,7 +74,7 @@ open class BaseNode(private val port: Int) : AbstractNode<BaseBlockChainModel, B
                     }
                     else -> {
                         logger.info { "Wow i request sync with me" }
-                        val response = this@BaseNode.peer.send(remoteNode, JSONRPCRequest("syncWithMe", arrayOf(), requestID++))
+                        this@BaseNode.peer.send(remoteNode, JSONRPCRequest("syncWithMe", arrayOf(), requestID++))
                     }
                 }
             }else{

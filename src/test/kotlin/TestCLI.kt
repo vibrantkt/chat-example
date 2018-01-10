@@ -9,6 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.Chat
+import org.vibrant.example.chat.base.models.BaseBlockChainModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.node.BaseMiner
 import org.vibrant.example.chat.base.util.AccountUtils
@@ -406,22 +407,21 @@ class TestCLI {
         )
 
 
-        val(_, _, result) =  "http://localhost:${chat1.http.port()}/messages".httpGet().responseString()
-        val map: HashMap<String, Any> = jacksonObjectMapper().readValue(result.get(), object : TypeReference<Map<String, Any>>(){})
+        val(_, _, result) =  "http://localhost:${chat1.http.port()}/blockchain".httpGet().responseString()
 
-        val transactions = (map["messages"] as List<BaseTransactionModel>)
+        val bchain = BaseJSONSerializer().deserialize(result.get()) as BaseBlockChainModel
+
         assertEquals(
-                1,
-                transactions.size
+                2,
+                bchain.blocks.size
         )
+//
+        val(_, _, result2) =  "http://localhost:${chat2.http.port()}/blockchain".httpGet().responseString()
 
-        val(_, _, result2) =  "http://localhost:${chat2.http.port()}/messages".httpGet().responseString()
-        val map2: HashMap<String, Any> = jacksonObjectMapper().readValue(result2.get(), object : TypeReference<Map<String, Any>>(){})
-
-        val transactions2 = (map2["messages"] as List<BaseTransactionModel>)
+        val bchain2 = BaseJSONSerializer().deserialize(result2.get()) as BaseBlockChainModel
         assertEquals(
-                1,
-                transactions2.size
+                2,
+                bchain2.blocks.size
         )
 
 

@@ -166,7 +166,7 @@
             },
             refreshBlockChain(){
                 this.$http.get('/blockchain').then(response => {
-                    this.blockchain = response.body["blockchain"]
+                    this.blockchain = response.body;
                     this.selectedParticipant = this.participants.length === 0 ? "" : this.participants[this.participants.length - 1].address;
                 }, response => {
                     // error callback
