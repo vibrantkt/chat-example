@@ -12,8 +12,4 @@ fun main(args: Array<String>) {
     val client = Chat(isMiner)
     if (!isMiner)
         client.setAccount(AccountUtils.generateKeyPair())
-    else
-        async { (client.node as BaseMiner).startMineLoop() }
-
-
 }

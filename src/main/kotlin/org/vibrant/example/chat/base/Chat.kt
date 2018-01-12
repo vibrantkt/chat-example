@@ -14,6 +14,8 @@ import org.vibrant.example.chat.base.node.BaseNode
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.io.File
+import java.net.ServerSocket
+import java.net.Socket
 import java.security.KeyPair
 import java.util.*
 
@@ -50,13 +52,14 @@ class Chat(private val isMiner: Boolean = false){
     }.enableStaticFiles(
             Chat::class.java.classLoader.getResource("html").toString().substring(5),
             Location.EXTERNAL
-    ).port(node.peer.port + 1000).start()
+    ).port(node.peer.port + 1001).start()
 
     internal fun hexAddress(): String{
         return HashUtils.bytesToHex(this.node.keyPair?.public?.encoded!!)
     }
 
     init {
+//        logger.info { "Starting chat http on port ${node.peer.port + 1001}" }
         this.node.start()
         this.node.onNextBlock.add { block ->
             this.listeners.forEach{
@@ -98,6 +101,7 @@ class Chat(private val isMiner: Boolean = false){
             }
             "account" -> {
                 this@Chat.changeName(parameters)
+                logger.info { "Name changed i guess" }
             }
             else -> {
                 logger.info { "Unrecognized command" }
@@ -106,23 +110,22 @@ class Chat(private val isMiner: Boolean = false){
     }
 
     private fun changeName(name: String) {
-        runBlocking {
-            val response = node.transaction(this@Chat.hexAddress(), BaseAccountMetaDataModel(name, Date().time))
-            logger.info { "Transaction broadcasted $response" }
-        }
+        val response = node.transaction(this@Chat.hexAddress(), BaseAccountMetaDataModel(name, Date().time))
+        logger.info { "Transaction broadcasted(change name) $response" }
     }
 
 
     private fun createNode(): BaseNode {
-        var node: BaseNode?
+        val node: BaseNode?
         var port = 7000
         while(true){
             port++
             try {
-                node = if(isMiner) BaseMiner(port) else BaseNode(port)
-                break
+                Socket("localhost", port).close()
             }catch (e: Exception){
-
+                node = if(isMiner) BaseMiner(port) else BaseNode(port)
+                logger.info { "Port already in use $port, trying another... $e" }
+                break
             }
         }
         return node!!
@@ -131,10 +134,8 @@ class Chat(private val isMiner: Boolean = false){
 
 
     fun message(hexAddressTo: String, message: String){
-        runBlocking {
-            val response = node.transaction(hexAddressTo, message)
-            logger.info { "Transaction broadcasted $response" }
-        }
+        val response = node.transaction(hexAddressTo, message)
+        logger.info { "Transaction broadcasted (message) $response" }
     }
 
     fun stop(){

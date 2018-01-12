@@ -23,7 +23,7 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
     protected val logger = KotlinLogging.logger {  }
 
     @Suppress("LeakingThis") internal val rpc = BaseJSONRPCProtocol(this)
-    internal val peer = Peer(port, this)
+    internal val peer = HTTPPeer(this, port)
 
     internal val possibleAheads = arrayListOf<RemoteNode>()
 
@@ -42,54 +42,52 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
     }
 
     fun handleLastBlock(lastBlock: BaseBlockModel, remoteNode: RemoteNode){
-        runBlocking {
-            val latestBlock = this@BaseNode.chain.latestBlock()
-            if(latestBlock != lastBlock){
-                logger.info { "My chain is not in sync with peer $remoteNode" }
-                when {
-                    lastBlock.index - latestBlock.index == 1L  && lastBlock.prevHash == latestBlock.hash -> {
-                        this@BaseNode.chain.pushBlock(
-                                lastBlock
-                        )
-                        this@BaseNode.onNextBlock.forEach { it(lastBlock) }
-                        logger.info { "I just got next block. Chain good: ${chain.checkIntegrity()}" }
-                    }
-                    lastBlock.index > latestBlock.index -> {
-                        logger.info { "My chain is behind, requesting full chain" }
-                        val chainResponse = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getFullChain", arrayOf(), requestID++))  as JSONRPCResponse<*>
-                        val model = BaseJSONSerializer.deserialize(chainResponse.result.toString()) as BaseBlockChainModel
-                        val tmpChain = BaseBlockChainProducer.instantiate(
-                                model
-                        )
+        val latestBlock = this@BaseNode.chain.latestBlock()
+        if(latestBlock != lastBlock){
+            logger.info { "My chain is not in sync with peer $remoteNode" }
+            when {
+                lastBlock.index - latestBlock.index == 1L  && lastBlock.prevHash == latestBlock.hash -> {
+                    this@BaseNode.chain.pushBlock(
+                            lastBlock
+                    )
+                    this@BaseNode.onNextBlock.forEach { it(lastBlock) }
+                    logger.info { "I just got next block. Chain good: ${chain.checkIntegrity()}" }
+                }
+                lastBlock.index > latestBlock.index -> {
+                    logger.info { "My chain is behind, requesting full chain" }
+                    val chainResponse = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getFullChain", arrayOf(), requestID++))
+                    val model = BaseJSONSerializer.deserialize(chainResponse.result.toString()) as BaseBlockChainModel
+                    val tmpChain = BaseBlockChainProducer.instantiate(
+                            model
+                    )
 
-                        val chainOK = tmpChain.checkIntegrity()
-                        if(chainOK){
-                            logger.info { "Received chain is fine, replacing" }
-                            this@BaseNode.chain.dump(model)
-                            logger.info { "Received chain is fine, replaced" }
-                        }else{
-                            logger.info { "Received chain is not fine, I ignore it" }
-                        }
-                    }
-                    lastBlock.index == latestBlock.index -> {
-                        logger.info { "My chain is same. Just leave it, i guess" }
-                    }
-                    else -> {
-                        logger.info { "Wow i request sync with me" }
-                        val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("syncWithMe", arrayOf(), requestID++))
-                        logger.info { "Got response! $response" }
+                    val chainOK = tmpChain.checkIntegrity()
+                    if(chainOK){
+                        logger.info { "Received chain is fine, replacing" }
+                        this@BaseNode.chain.dump(model)
+                        logger.info { "Received chain is fine, replaced" }
+                    }else{
+                        logger.info { "Received chain is not fine, I ignore it" }
                     }
                 }
-            }else{
-                logger.info { "Chain in sync with peer $remoteNode" }
+                lastBlock.index == latestBlock.index -> {
+                    logger.info { "My chain is same. Just leave it, i guess" }
+                }
+                else -> {
+                    logger.info { "Wow i request sync with me" }
+                    val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("syncWithMe", arrayOf(), requestID++))
+                    logger.info { "Got response! $response" }
+                }
             }
+        }else{
+            logger.info { "Chain in sync with peer $remoteNode" }
         }
     }
 
 
-    suspend fun synchronize(remoteNode: RemoteNode){
+    fun synchronize(remoteNode: RemoteNode){
         logger.info { "Requesting and waiting for response get last block" }
-        val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getLastBlock", arrayOf(), requestID++)) as JSONRPCResponse<*>
+        val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getLastBlock", arrayOf(), requestID++))
         logger.info { "Got last block" }
         val lastBlock = BaseJSONSerializer.deserialize(response.result.toString()) as BaseBlockModel
         logger.info { "Last block is $lastBlock" }
@@ -100,7 +98,7 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
     val chain: BaseBlockChainProducer = BaseBlockChainProducer(difficulty = 2)
 
 
-    suspend fun transaction(to: String, payload: String): List<JSONRPCResponse<*>> {
+    fun transaction(to: String, payload: String): List<JSONRPCResponse<*>> {
         val transaction = BaseTransactionProducer(
                 HashUtils.bytesToHex(this@BaseNode.keyPair!!.public.encoded),
                 to,
@@ -121,7 +119,7 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
     }
 
 
-    suspend fun transaction(to: String, payload: TransactionPayload): List<JSONRPCResponse<*>>{
+    fun transaction(to: String, payload: TransactionPayload): List<JSONRPCResponse<*>>{
         val transaction = BaseTransactionProducer(
                 HashUtils.bytesToHex(this@BaseNode.keyPair!!.public.encoded),
                 to,
@@ -141,9 +139,14 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
         ))
     }
 
+    @Suppress("RedundantSuspendModifier")
     override suspend fun connect(remoteNode: RemoteNode): Boolean {
-        val response1 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++)) as JSONRPCResponse<*>
-        val response2 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("nodeType", arrayOf(), this@BaseNode.requestID++)) as JSONRPCResponse<*>
+        return this.connectToNode(remoteNode)
+    }
+
+    fun connectToNode(remoteNode: RemoteNode): Boolean{
+        val response1 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++))
+        val response2 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("nodeType", arrayOf(), this@BaseNode.requestID++))
         return if(response1.result == "peer"){
             this@BaseNode.peer.addUniqueRemoteNode(remoteNode, response2.result.toString() == "miner")
             true

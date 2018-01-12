@@ -23,6 +23,7 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
         if(node is BaseMiner){
             node.addTransaction(transaction)
         }
+        logger.info { "Returning: Block mined!" }
         return JSONRPCResponse(
                 result = node is BaseMiner,
                 error = null,
@@ -55,11 +56,8 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
 
     @JSONRPCMethod
     fun syncWithMe(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
-        logger.info { "Requested sync, starting..." }
-        runBlocking {
-            logger.info { "Inside run blocking before sync" }
-            node.synchronize(remoteNode)
-        }
+        logger.info { "${node.peer.port} Requested sync, starting... " }
+        node.synchronize(remoteNode)
         logger.info { "Sync finished, responding..." }
         return JSONRPCResponse(
                 result = true,

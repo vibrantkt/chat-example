@@ -74,9 +74,6 @@ class TestCLI {
         val chat1 = Chat()
         val miner = Chat(true)
 
-        val minerC = async(newSingleThreadContext("miner loop")) {
-            (miner.node as BaseMiner).startMineLoop()
-        }
 
 
         chat1.node.keyPair = AccountUtils.generateKeyPair()
@@ -98,15 +95,6 @@ class TestCLI {
 
         chat1.handleCommand("transaction ${HashUtils.bytesToHex(miner.node.keyPair!!.public.encoded)} hello")
 
-
-        val latch1 = CountDownLatch(1)
-        (miner.node as BaseMiner).onMined.add{
-            latch1.countDown()
-        }
-        latch1.await()
-        miner.node.onMined.clear()
-
-
         assertEquals(
                 miner.node.chain.produce(BaseJSONSerializer),
                 chat1.node.chain.produce(BaseJSONSerializer)
@@ -123,7 +111,6 @@ class TestCLI {
         )
 
 
-        minerC.cancel()
         miner.stop()
 
         chat1.stop()
@@ -135,11 +122,6 @@ class TestCLI {
     fun `Test account name transaction`(){
         val chat1 = Chat()
         val miner = Chat(true)
-
-        val minerC = async(newSingleThreadContext("miner loop")) {
-            (miner.node as BaseMiner).startMineLoop()
-        }
-
 
         chat1.node.keyPair = AccountUtils.generateKeyPair()
         miner.node.keyPair = AccountUtils.generateKeyPair()
@@ -161,13 +143,6 @@ class TestCLI {
         chat1.handleCommand("account NewName")
 
 
-        val latch1 = CountDownLatch(1)
-        (miner.node as BaseMiner).onMined.add{
-            latch1.countDown()
-        }
-        latch1.await()
-        miner.node.onMined.clear()
-
 
         assertEquals(
                 miner.node.chain.produce(BaseJSONSerializer),
@@ -184,8 +159,6 @@ class TestCLI {
                 chat1.node.chain.blocks.size
         )
 
-
-        minerC.cancel()
         miner.stop()
 
         chat1.stop()
@@ -198,11 +171,6 @@ class TestCLI {
         val chat1 = Chat()
         val chat2 = Chat()
         val miner = Chat(true)
-
-        async {
-            (miner.node as BaseMiner).startMineLoop()
-        }
-
 
         chat1.node.keyPair = AccountUtils.generateKeyPair()
         chat2.node.keyPair = AccountUtils.generateKeyPair()
@@ -228,15 +196,7 @@ class TestCLI {
                 chat2.node.peer.miners.size
         )
 
-        chat1.handleCommand("transaction ${HashUtils.bytesToHex(miner.node.keyPair!!.public.encoded)} hello")
-
-        val latch1 = CountDownLatch(1)
-        (miner.node as BaseMiner).onMined.add{
-            latch1.countDown()
-        }
-        latch1.await()
-        miner.node.onMined.clear()
-
+        chat1.handleCommand("transaction ${HashUtils.bytesToHex(chat2.node.keyPair!!.public.encoded)} hello")
 
 
         assertEquals(
@@ -279,12 +239,8 @@ class TestCLI {
         }
 
         chat1.handleCommand("transaction ${HashUtils.bytesToHex(chat2.node.keyPair!!.public.encoded)} hellothere")
-        val latch2 = CountDownLatch(1)
-        miner.node.onMined.add{
-            latch2.countDown()
-        }
-        latch2.await()
-        miner.node.onMined.clear()
+
+        println("CCCCCCCCCCCCcccccccCCCCCCCCCCCCCCCCCCCCccccCCcccCCcccCccCCc")
 
         assertEquals(
                 miner.node.chain.produce(BaseJSONSerializer),
@@ -346,7 +302,6 @@ class TestCLI {
 
         val miner = Chat(true)
 
-        async { (miner.node as BaseMiner).startMineLoop() }
 
         fun command(peer: Chat, command: String): String {
             val(_, _, result) =  "http://localhost:${peer.http.port()}/command".httpPost().body("{\"command\":\"$command\"}").responseString()
@@ -384,13 +339,6 @@ class TestCLI {
                 command(chat1, "transaction ${chat2.hexAddress()} hello!")
         )
 
-        val latch1 = CountDownLatch(1)
-        (miner.node as BaseMiner).onMined.add{
-            latch1.countDown()
-        }
-        latch1.await()
-        miner.node.onMined.clear()
-
         assertEquals(
                 2,
                 miner.node.chain.blocks.size
@@ -415,7 +363,7 @@ class TestCLI {
                 2,
                 bchain.blocks.size
         )
-//
+
         val(_, _, result2) =  "http://localhost:${chat2.http.port()}/blockchain".httpGet().responseString()
 
         val bchain2 = BaseJSONSerializer.deserialize(result2.get()) as BaseBlockChainModel

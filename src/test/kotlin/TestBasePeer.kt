@@ -131,10 +131,14 @@ class TestBasePeer {
 
 
     @Test
-    fun `Test add transaction loop from node to miner`(){
+    fun `Test add transaction loop to miner`(){
         val miner = BaseMiner(7001)
 
         val sender = AccountUtils.generateKeyPair()
+
+//        val thread = async(newSingleThreadContext("miner loop")) {
+//            miner.startMineLoop()
+//        }
 
         val transaction = BaseTransactionProducer(
                 "yura",
@@ -149,7 +153,6 @@ class TestBasePeer {
         ).produce(BaseJSONSerializer)
 
         miner.addTransaction(transaction)
-        miner.mine()
 
         val chain = miner.chain.produce(BaseJSONSerializer)
 
@@ -164,6 +167,8 @@ class TestBasePeer {
         )
 
         miner.stop()
+
+//        thread.cancel()
 
 
     }
@@ -197,17 +202,12 @@ class TestBasePeer {
             miner.synchronize(RemoteNode("localhost", 7000))
         }
 
-
-        val thread = async(newSingleThreadContext("miner loop")) {
-            miner.startMineLoop()
-        }
-
         runBlocking {
             val response = node.peer.request(RemoteNode("localhost", 7001), JSONRPCRequest(
                     method = "addTransaction",
                     params = arrayOf(BaseJSONSerializer.serialize(transaction)),
                     id = 5
-            )) as JSONRPCResponse<*>
+            ))
 
 
             assertEquals(
@@ -215,13 +215,6 @@ class TestBasePeer {
                     response.result
             )
 
-            val latch = CountDownLatch(1)
-            miner.onMined.add{
-                latch.countDown()
-            }
-            latch.await()
-
-            // block is mined
             assertEquals(
                     2,
                     miner.chain.blocks.size
@@ -238,8 +231,6 @@ class TestBasePeer {
             )
         }
 
-
-        thread.cancel()
         node.stop()
         miner.stop()
 
@@ -274,10 +265,8 @@ class TestBasePeer {
                 BaseJSONSerializer
         ))
 
-        runBlocking {
-            miner.connect(RemoteNode("localhost", 7000))
-            miner.synchronize(RemoteNode("localhost", 7000))
-        }
+        miner.connectToNode(RemoteNode("localhost", 7000))
+        miner.synchronize(RemoteNode("localhost", 7000))
 
         assertEquals(
                 miner.chain.produce(BaseJSONSerializer),
