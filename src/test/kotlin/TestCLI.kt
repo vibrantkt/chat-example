@@ -108,8 +108,8 @@ class TestCLI {
 
 
         assertEquals(
-                miner.node.chain.produce(BaseJSONSerializer()),
-                chat1.node.chain.produce(BaseJSONSerializer())
+                miner.node.chain.produce(BaseJSONSerializer),
+                chat1.node.chain.produce(BaseJSONSerializer)
         )
 
         assertEquals(
@@ -170,8 +170,8 @@ class TestCLI {
 
 
         assertEquals(
-                miner.node.chain.produce(BaseJSONSerializer()),
-                chat1.node.chain.produce(BaseJSONSerializer())
+                miner.node.chain.produce(BaseJSONSerializer),
+                chat1.node.chain.produce(BaseJSONSerializer)
         )
 
         assertEquals(
@@ -240,13 +240,13 @@ class TestCLI {
 
 
         assertEquals(
-                miner.node.chain.produce(BaseJSONSerializer()),
-                chat1.node.chain.produce(BaseJSONSerializer())
+                miner.node.chain.produce(BaseJSONSerializer),
+                chat1.node.chain.produce(BaseJSONSerializer)
         )
 
         assertEquals(
-                miner.node.chain.produce(BaseJSONSerializer()),
-                chat2.node.chain.produce(BaseJSONSerializer())
+                miner.node.chain.produce(BaseJSONSerializer),
+                chat2.node.chain.produce(BaseJSONSerializer)
         )
 
         assertEquals(
@@ -287,13 +287,13 @@ class TestCLI {
         miner.node.onMined.clear()
 
         assertEquals(
-                miner.node.chain.produce(BaseJSONSerializer()),
-                chat1.node.chain.produce(BaseJSONSerializer())
+                miner.node.chain.produce(BaseJSONSerializer),
+                chat1.node.chain.produce(BaseJSONSerializer)
         )
 
         assertEquals(
-                miner.node.chain.produce(BaseJSONSerializer()),
-                chat2.node.chain.produce(BaseJSONSerializer())
+                miner.node.chain.produce(BaseJSONSerializer),
+                chat2.node.chain.produce(BaseJSONSerializer)
         )
 
         assertEquals(
@@ -409,7 +409,7 @@ class TestCLI {
 
         val(_, _, result) =  "http://localhost:${chat1.http.port()}/blockchain".httpGet().responseString()
 
-        val bchain = BaseJSONSerializer().deserialize(result.get()) as BaseBlockChainModel
+        val bchain = BaseJSONSerializer.deserialize(result.get()) as BaseBlockChainModel
 
         assertEquals(
                 2,
@@ -418,7 +418,7 @@ class TestCLI {
 //
         val(_, _, result2) =  "http://localhost:${chat2.http.port()}/blockchain".httpGet().responseString()
 
-        val bchain2 = BaseJSONSerializer().deserialize(result2.get()) as BaseBlockChainModel
+        val bchain2 = BaseJSONSerializer.deserialize(result2.get()) as BaseBlockChainModel
         assertEquals(
                 2,
                 bchain2.blocks.size

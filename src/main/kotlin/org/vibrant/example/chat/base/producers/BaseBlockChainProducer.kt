@@ -1,10 +1,10 @@
 package org.vibrant.example.chat.base.producers
 
+import org.vibrant.core.ModelSerializer
 import org.vibrant.example.chat.base.models.BaseBlockChainModel
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.core.producers.BlockChainProducer
-import org.vibrant.core.reducers.ModelSerializer
 import java.util.*
 
 class BaseBlockChainProducer(val difficulty: Int = 1) : BlockChainProducer<BaseBlockChainModel>(){

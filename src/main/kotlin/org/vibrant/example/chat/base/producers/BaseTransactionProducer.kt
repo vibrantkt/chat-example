@@ -1,10 +1,10 @@
 package org.vibrant.example.chat.base.producers
 
+import org.vibrant.core.ModelSerializer
+import org.vibrant.core.algorithm.SignatureProducer
 import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
-import org.vibrant.core.reducers.SignatureProducer
 import org.vibrant.core.producers.TransactionProducer
-import org.vibrant.core.reducers.ModelSerializer
 import org.vibrant.example.chat.base.models.TransactionPayload
 import org.vibrant.example.chat.base.util.HashUtils
 import java.security.KeyPair

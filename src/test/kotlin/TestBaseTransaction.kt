@@ -1,7 +1,7 @@
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
-import org.vibrant.core.reducers.SignatureProducer
+import org.vibrant.core.algorithm.SignatureProducer
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseAccountMetaDataModel
 import org.vibrant.example.chat.base.models.BaseMessageModel
@@ -26,7 +26,7 @@ class TestBaseTransaction {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
         assertEquals(
                 "yura",
@@ -44,7 +44,7 @@ class TestBaseTransaction {
         )
 
         assertEquals(
-                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer().serialize(BaseMessageModel("Hello!",0)), sender)),
+                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer.serialize(BaseMessageModel("Hello!",0)), sender)),
                 transaction.signature
         )
 
@@ -64,7 +64,7 @@ class TestBaseTransaction {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
         assertEquals(
                 "yura",
@@ -82,7 +82,7 @@ class TestBaseTransaction {
         )
 
         assertEquals(
-                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer().serialize(BaseAccountMetaDataModel("Yurii", 0)), sender)),
+                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer.serialize(BaseAccountMetaDataModel("Yurii", 0)), sender)),
                 transaction.signature
         )
 
@@ -102,9 +102,9 @@ class TestBaseTransaction {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
-        val converted = BaseJSONSerializer().deserialize(BaseJSONSerializer().serialize(transaction)) as BaseTransactionModel
+        val converted = BaseJSONSerializer.deserialize(BaseJSONSerializer.serialize(transaction)) as BaseTransactionModel
 
         assertEquals(
                 "yura",
@@ -122,7 +122,7 @@ class TestBaseTransaction {
         )
 
         assertEquals(
-                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer().serialize(BaseMessageModel("Hello!",0)), sender)),
+                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer.serialize(BaseMessageModel("Hello!",0)), sender)),
                 converted.signature
         )
     }
@@ -140,9 +140,9 @@ class TestBaseTransaction {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
-        val serialized = BaseJSONSerializer().serialize(transaction)
+        val serialized = BaseJSONSerializer.serialize(transaction)
         assertEquals(
                 "{\"@type\":\"transaction\",\"from\":\"yura\",\"to\":\"vasya\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello!\",\"timestamp\":0},\"signature\":\"${transaction.signature}\"}",
                 serialized

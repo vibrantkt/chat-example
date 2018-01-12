@@ -15,7 +15,7 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
 
     @JSONRPCMethod
     fun addTransaction(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
-        val transaction = BaseJSONSerializer().deserialize(request.params[0].toString()) as BaseTransactionModel
+        val transaction = BaseJSONSerializer.deserialize(request.params[0].toString()) as BaseTransactionModel
         if(node is BaseMiner){
             node.addTransaction(transaction)
         }
@@ -30,7 +30,7 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
     @JSONRPCMethod
     fun getLastBlock(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
         return JSONRPCResponse(
-                result = BaseJSONSerializer().serialize(node.chain.latestBlock()),
+                result = BaseJSONSerializer.serialize(node.chain.latestBlock()),
                 error = null,
                 id = request.id
         )
@@ -39,10 +39,10 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
 
     @JSONRPCMethod
     fun newBlock(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
-        val blockModel = BaseJSONSerializer().deserialize(request.params[0] as String) as BaseBlockModel
+        val blockModel = BaseJSONSerializer.deserialize(request.params[0] as String) as BaseBlockModel
         node.handleLastBlock(blockModel, remoteNode)
         return JSONRPCResponse(
-                result = BaseJSONSerializer().serialize(node.chain.latestBlock()),
+                result = BaseJSONSerializer.serialize(node.chain.latestBlock()),
                 error = null,
                 id = request.id
         )
@@ -64,7 +64,7 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
     @JSONRPCMethod
     fun getFullChain(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
         return JSONRPCResponse(
-                result = BaseJSONSerializer().serialize(node.chain.produce(BaseJSONSerializer())),
+                result = BaseJSONSerializer.serialize(node.chain.produce(BaseJSONSerializer)),
                 error = null,
                 id = request.id
         )

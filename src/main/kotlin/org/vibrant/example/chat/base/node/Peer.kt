@@ -10,7 +10,7 @@ import java.net.DatagramPacket
 
 class Peer(port: Int, val node: BaseNode) : UDPSessionPeer<JSONRPCEntity>(port, object : UDPSessionPeer.Communication.CommunicationPackageDeserializer<JSONRPCEntity>(){
     override fun fromByteArray(byteArray: ByteArray): JSONRPCEntity {
-        return BaseJSONSerializer().deserializeJSONRPC(String(byteArray, charset("UTF-8")))
+        return BaseJSONSerializer.deserializeJSONRPC(String(byteArray, charset("UTF-8")))
     }
 
 }) {

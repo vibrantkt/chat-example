@@ -18,7 +18,7 @@ class TestJSONRPC {
                 id = 1
         )
 
-        val serialized = BaseJSONSerializer().serialize(request)
+        val serialized = BaseJSONSerializer.serialize(request)
         assertEquals(
                 "{\"result\":\"Hood\",\"error\":null,\"id\":1,\"version\":\"2.0\"}",
                 serialized
@@ -33,8 +33,8 @@ class TestJSONRPC {
                 id = 1
         )
 
-        val serialized = BaseJSONSerializer().serialize(request)
-        val deserialized = BaseJSONSerializer().deserializeJSONRPC(serialized)
+        val serialized = BaseJSONSerializer.serialize(request)
+        val deserialized = BaseJSONSerializer.deserializeJSONRPC(serialized)
         assertEquals(
                 request,
                 deserialized
@@ -49,7 +49,7 @@ class TestJSONRPC {
                 1
         )
 
-        val serialized = BaseJSONSerializer().serialize(request)
+        val serialized = BaseJSONSerializer.serialize(request)
         assertEquals(
                 "{\"method\":\"callWithNoParams\",\"params\":[],\"id\":1,\"version\":\"2.0\"}",
                 serialized
@@ -64,8 +64,8 @@ class TestJSONRPC {
                 1
         )
 
-        val serialized = BaseJSONSerializer().serialize(request)
-        val deserialized = BaseJSONSerializer().deserializeJSONRPC(serialized)
+        val serialized = BaseJSONSerializer.serialize(request)
+        val deserialized = BaseJSONSerializer.deserializeJSONRPC(serialized)
 
         assertEquals(
                 request,

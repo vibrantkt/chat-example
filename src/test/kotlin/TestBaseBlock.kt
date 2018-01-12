@@ -1,10 +1,10 @@
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.vibrant.core.algorithm.SignatureProducer
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.producers.BaseBlockProducer
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
-import org.vibrant.core.reducers.SignatureProducer
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.security.KeyPair
@@ -28,7 +28,7 @@ class TestBaseBlock {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
         val transaction2 = BaseTransactionProducer(
                 "User2",
@@ -40,7 +40,7 @@ class TestBaseBlock {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
         val block = BaseBlockProducer(
                 1,
                 "prevBlockHash",
@@ -48,7 +48,7 @@ class TestBaseBlock {
                 listOf(transaction1, transaction2),
                 nonce = 0,
                 difficulty = 0
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
 
 
@@ -71,7 +71,7 @@ class TestBaseBlock {
                 block.index.toString() +
                         block.prevHash +
                         block.timestamp +
-                        block.transactions.map{ return@map BaseJSONSerializer().serialize(it)}.joinToString("") +
+                        block.transactions.map{ return@map BaseJSONSerializer.serialize(it)}.joinToString("") +
                         block.nonce
 
         assertEquals(
@@ -104,7 +104,7 @@ class TestBaseBlock {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
         val transaction2 = BaseTransactionProducer(
                 "User2",
@@ -116,23 +116,23 @@ class TestBaseBlock {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
         val block = BaseBlockProducer(
                 1,
                 "prevBlockHash",
                 1000,
                 listOf(transaction1, transaction2)
 
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
-        val payload = (block.index.toString() + block.prevHash + block.timestamp + block.transactions.map{ return@map BaseJSONSerializer().serialize(it)}.joinToString("") + block.nonce)
+        val payload = (block.index.toString() + block.prevHash + block.timestamp + block.transactions.map{ return@map BaseJSONSerializer.serialize(it)}.joinToString("") + block.nonce)
         val hash = HashUtils.bytesToHex(
                 HashUtils.sha256(payload.toByteArray())
         )
 
         assertEquals(
                 "{\"@type\":\"block\",\"index\":1,\"hash\":\"$hash\",\"prevHash\":\"prevBlockHash\",\"timestamp\":1000,\"transactions\":[{\"@type\":\"transaction\",\"from\":\"User1\",\"to\":\"User2\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello, user2!!\",\"timestamp\":0},\"signature\":\"${transaction1.signature}\"},{\"@type\":\"transaction\",\"from\":\"User2\",\"to\":\"User1\",\"payload\":{\"@type\":\"message\",\"content\":\"Well, hello!\",\"timestamp\":0},\"signature\":\"${transaction2.signature}\"}],\"nonce\":0}",
-                BaseJSONSerializer().serialize(block)
+                BaseJSONSerializer.serialize(block)
         )
     }
 
@@ -151,7 +151,7 @@ class TestBaseBlock {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
         val transaction2 = BaseTransactionProducer(
                 "User2",
@@ -163,18 +163,18 @@ class TestBaseBlock {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
         val block = BaseBlockProducer(
                 1,
                 "prevBlockHash",
                 1000,
                 listOf(transaction1, transaction2)
 
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
-        val serializedBlock = BaseJSONSerializer().serialize(block)
+        val serializedBlock = BaseJSONSerializer.serialize(block)
 
-        val deserializedBlock = BaseJSONSerializer().deserialize(serializedBlock)
+        val deserializedBlock = BaseJSONSerializer.deserialize(serializedBlock)
 
         assertEquals(
                 block,

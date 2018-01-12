@@ -6,6 +6,6 @@ import org.vibrant.example.chat.base.BaseJSONSerializer
 
 abstract class JSONRPCEntity(id: Long): UDPSessionPeer.Communication.CommunicationPackage(id){
     override fun toByteArray(): ByteArray {
-        return BaseJSONSerializer().serialize(this).toByteArray(charset("UTF-8"))
+        return BaseJSONSerializer.serialize(this).toByteArray(charset("UTF-8"))
     }
 }

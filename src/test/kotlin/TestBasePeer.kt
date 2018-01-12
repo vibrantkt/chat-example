@@ -10,7 +10,7 @@ import org.vibrant.example.chat.base.node.BaseMiner
 import org.vibrant.example.chat.base.node.BaseNode
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
 import org.vibrant.core.node.RemoteNode
-import org.vibrant.core.reducers.SignatureProducer
+import org.vibrant.core.algorithm.SignatureProducer
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
@@ -105,7 +105,7 @@ class TestBasePeer {
 
         miner.chain.pushBlock(node.chain.createBlock(
                 listOf(),
-                BaseJSONSerializer()
+                BaseJSONSerializer
         ))
 
 
@@ -114,8 +114,8 @@ class TestBasePeer {
 
 
         assertEquals(
-                miner.chain.produce(BaseJSONSerializer()),
-                node.chain.produce(BaseJSONSerializer())
+                miner.chain.produce(BaseJSONSerializer),
+                node.chain.produce(BaseJSONSerializer)
         )
 
         miner.stop()
@@ -138,7 +138,7 @@ class TestBasePeer {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
         val node = BaseNode(7000)
         val miner = BaseMiner(7001)
@@ -148,7 +148,7 @@ class TestBasePeer {
 
         miner.chain.pushBlock(miner.chain.createBlock(
                 listOf(transaction),
-                BaseJSONSerializer()
+                BaseJSONSerializer
         ))
 
         miner.connect(RemoteNode("localhost", 7000))
@@ -165,8 +165,8 @@ class TestBasePeer {
 
 
         assertEquals(
-                miner.chain.produce(BaseJSONSerializer()),
-                node.chain.produce(BaseJSONSerializer())
+                miner.chain.produce(BaseJSONSerializer),
+                node.chain.produce(BaseJSONSerializer)
         )
 
         node.stop()
@@ -191,12 +191,12 @@ class TestBasePeer {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
         miner.addTransaction(transaction)
         miner.mine()
 
-        val chain = miner.chain.produce(BaseJSONSerializer())
+        val chain = miner.chain.produce(BaseJSONSerializer)
 
         assertEquals(
                 2,
@@ -228,7 +228,7 @@ class TestBasePeer {
                         return HashUtils.signData(content, keyPair)
                     }
                 }
-        ).produce(BaseJSONSerializer())
+        ).produce(BaseJSONSerializer)
 
         val node = BaseNode(7000)
         val miner = BaseMiner(7001)
@@ -248,7 +248,7 @@ class TestBasePeer {
         runBlocking {
             val response = node.peer.request(RemoteNode("localhost", 7001), JSONRPCRequest(
                     method = "addTransaction",
-                    params = arrayOf(BaseJSONSerializer().serialize(transaction)),
+                    params = arrayOf(BaseJSONSerializer.serialize(transaction)),
                     id = 5
             )) as JSONRPCResponse<*>
 
@@ -276,8 +276,8 @@ class TestBasePeer {
             )
 
             assertEquals(
-                    miner.chain.produce(BaseJSONSerializer()),
-                    node.chain.produce(BaseJSONSerializer())
+                    miner.chain.produce(BaseJSONSerializer),
+                    node.chain.produce(BaseJSONSerializer)
             )
         }
 
@@ -307,13 +307,13 @@ class TestBasePeer {
 //                                return HashUtils.signData(content, keyPair)
 //                            }
 //                        }
-//                ).produce(BaseJSONSerializer())
+//                ).produce(BaseJSONSerializer)
 //            }
 //
 //
-//            chain.pushBlock(chain.createBlock(transactions, BaseJSONSerializer()))
+//            chain.pushBlock(chain.createBlock(transactions, BaseJSONSerializer))
 //        }
-//        println(BaseJSONSerializer().serialize(chain.produce(BaseJSONSerializer())))
+//        println(BaseJSONSerializer.serialize(chain.produce(BaseJSONSerializer)))
 //    }
 
 }

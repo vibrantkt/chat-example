@@ -29,7 +29,7 @@ class BaseMiner(port: Int) : BaseNode(port){
         val timestamp = Date().time
         val block = this.chain.pushBlock(this.chain.createBlock(
                 this.pendingTransactions,
-                BaseJSONSerializer(),
+                BaseJSONSerializer,
                 timestamp = timestamp
         ))
         logger.info { "Block mined" }
@@ -38,7 +38,7 @@ class BaseMiner(port: Int) : BaseNode(port){
             logger.info { "Broadcasting this block..." }
             val response = this@BaseMiner.peer.broadcastAll(JSONRPCRequest(
                     method = "newBlock",
-                    params = arrayOf(BaseJSONSerializer().serialize(block)),
+                    params = arrayOf(BaseJSONSerializer.serialize(block)),
                     id = this@BaseMiner.requestID++
             ))
             logger.info { "Awaited this shit! $response" }

@@ -10,13 +10,14 @@ import org.vibrant.example.chat.base.models.BaseBlockChainModel
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.core.models.Model
-import org.vibrant.core.reducers.ModelSerializer
+import org.vibrant.core.ModelSerializer
+import org.vibrant.example.chat.base.models.AbstractBaseModel
 import java.util.HashMap
 
 
 
 
-class BaseJSONSerializer : ModelSerializer(){
+object BaseJSONSerializer : ModelSerializer(){
     override fun deserialize(serialized: String): Model {
         val map: HashMap<String, Any> = jacksonObjectMapper().readValue(serialized, object : TypeReference<Map<String, Any>>(){})
 
@@ -38,7 +39,7 @@ class BaseJSONSerializer : ModelSerializer(){
         return jacksonObjectMapper().readValue(serialized, targetType)
     }
 
-    override fun <T : Model> serialize(model: T): String {
+    override fun serialize(model: Model): String {
         return jacksonObjectMapper().writeValueAsString(model)
     }
 

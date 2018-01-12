@@ -34,8 +34,7 @@ class Chat(private val isMiner: Boolean = false){
         ws.onClose { session, _, _ -> this@Chat.listeners.remove(session) }
         ws.onError { session, _ -> this@Chat.listeners.remove(session) }
     }.get("blockchain"){ ctx ->
-        val map = hashMapOf<String, Any>()
-        val response = jacksonObjectMapper().writeValueAsString(node.chain.produce(BaseJSONSerializer()))
+        val response = jacksonObjectMapper().writeValueAsString(node.chain.produce(BaseJSONSerializer))
         ctx.result(response)
     }.get("account"){ ctx ->
         val map = hashMapOf<String, Any>()
