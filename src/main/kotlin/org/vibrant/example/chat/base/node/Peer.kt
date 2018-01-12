@@ -17,8 +17,8 @@ class Peer(port: Int, val node: BaseNode) : UDPSessionPeer<JSONRPCEntity>(port, 
 
 
     @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
-    suspend override fun handlePackage(entity: JSONRPCEntity, peer: UDPSessionPeer<JSONRPCEntity>, remoteNode: RemoteNode) {
-        logger.info { "Received package ${entity}" }
+    override suspend fun handlePackage(entity: JSONRPCEntity, peer: UDPSessionPeer<JSONRPCEntity>, remoteNode: RemoteNode) {
+        logger.info { "Received package $entity" }
         when (entity) {
             is JSONRPCRequest -> {
                 logger.info { "Received request $entity" }

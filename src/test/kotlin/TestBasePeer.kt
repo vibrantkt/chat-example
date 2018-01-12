@@ -30,12 +30,13 @@ class TestBasePeer {
         node.start()
         miner.start()
 
-        val some = node.connect(RemoteNode("localhost", 7001))
-        // check ping - pong
-        assertEquals(
-                true,
-                some
-        )
+        runBlocking {
+            val some = node.connect(RemoteNode("localhost", 7001))
+            assertEquals(
+                    true,
+                    some
+            )
+        }
 
         // connection established
 
@@ -109,70 +110,24 @@ class TestBasePeer {
         ))
 
 
-        node.connect(RemoteNode("localhost", 7001))
-        node.synchronize(RemoteNode("localhost", 7001))
+        runBlocking {
 
-
-        assertEquals(
-                miner.chain.produce(BaseJSONSerializer),
-                node.chain.produce(BaseJSONSerializer)
-        )
-
-        miner.stop()
-        node.stop()
-    }
-
-
-    @Test
-    fun `Test peer ahead sync`(){
-
-        val sender = AccountUtils.generateKeyPair()
-
-        val transaction = BaseTransactionProducer(
-                "yura",
-                "vasya",
-                BaseMessageModel("Hello!", 0),
-                sender,
-                object : SignatureProducer {
-                    override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
-                        return HashUtils.signData(content, keyPair)
-                    }
-                }
-        ).produce(BaseJSONSerializer)
-
-        val node = BaseNode(7000)
-        val miner = BaseMiner(7001)
-
-        node.start()
-        miner.start()
-
-        miner.chain.pushBlock(miner.chain.createBlock(
-                listOf(transaction),
-                BaseJSONSerializer
-        ))
-
-        miner.connect(RemoteNode("localhost", 7000))
-
-
-        val latch1 = CountDownLatch(1)
-        node.chain.onChange.add {
-            latch1.countDown()
+            node.connect(RemoteNode("localhost", 7001))
+            node.synchronize(RemoteNode("localhost", 7001))
         }
 
-        miner.synchronize(RemoteNode("localhost", 7000))
-
-        latch1.await()
-
 
         assertEquals(
                 miner.chain.produce(BaseJSONSerializer),
                 node.chain.produce(BaseJSONSerializer)
         )
 
-        node.stop()
         miner.stop()
-
+        node.stop()
     }
+
+
+
 
 
     @Test
@@ -237,8 +192,10 @@ class TestBasePeer {
         miner.start()
 
 
-        miner.connect(RemoteNode("localhost", 7000))
-        miner.synchronize(RemoteNode("localhost", 7000))
+        runBlocking {
+            miner.connect(RemoteNode("localhost", 7000))
+            miner.synchronize(RemoteNode("localhost", 7000))
+        }
 
 
         val thread = async(newSingleThreadContext("miner loop")) {
@@ -288,6 +245,49 @@ class TestBasePeer {
 
     }
 
+
+    @Test
+    fun `Test peer ahead sync`(){
+
+        val sender = AccountUtils.generateKeyPair()
+
+        val transaction = BaseTransactionProducer(
+                "yura",
+                "vasya",
+                BaseMessageModel("Hello!", 0),
+                sender,
+                object : SignatureProducer {
+                    override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
+                        return HashUtils.signData(content, keyPair)
+                    }
+                }
+        ).produce(BaseJSONSerializer)
+
+        val node = BaseNode(7000)
+        val miner = BaseMiner(7001)
+
+        node.start()
+        miner.start()
+
+        miner.chain.pushBlock(miner.chain.createBlock(
+                listOf(transaction),
+                BaseJSONSerializer
+        ))
+
+        runBlocking {
+            miner.connect(RemoteNode("localhost", 7000))
+            miner.synchronize(RemoteNode("localhost", 7000))
+        }
+
+        assertEquals(
+                miner.chain.produce(BaseJSONSerializer),
+                node.chain.produce(BaseJSONSerializer)
+        )
+
+        node.stop()
+        miner.stop()
+
+    }
 
 
 //

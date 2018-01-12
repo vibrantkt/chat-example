@@ -3,6 +3,8 @@
 package org.vibrant.example.chat.base.node
 
 import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.runBlocking
+import mu.KotlinLogging
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCRequest
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
@@ -11,6 +13,8 @@ import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.core.node.RemoteNode
 
 open class BaseJSONRPCProtocol(val node: BaseNode) {
+
+    private val logger = KotlinLogging.logger{}
 
 
     @JSONRPCMethod
@@ -51,8 +55,12 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
 
     @JSONRPCMethod
     fun syncWithMe(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
-//        node.possibleAheads.add(remoteNode)
-        node.synchronize(remoteNode)
+        logger.info { "Requested sync, starting..." }
+        runBlocking {
+            logger.info { "Inside run blocking before sync" }
+            node.synchronize(remoteNode)
+        }
+        logger.info { "Sync finished, responding..." }
         return JSONRPCResponse(
                 result = true,
                 error = null,

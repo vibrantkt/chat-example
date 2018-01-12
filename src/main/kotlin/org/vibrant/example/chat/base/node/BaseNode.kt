@@ -76,7 +76,8 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
                     }
                     else -> {
                         logger.info { "Wow i request sync with me" }
-                        this@BaseNode.peer.send(remoteNode, JSONRPCRequest("syncWithMe", arrayOf(), requestID++))
+                        val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("syncWithMe", arrayOf(), requestID++))
+                        logger.info { "Got response! $response" }
                     }
                 }
             }else{
@@ -86,13 +87,14 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
     }
 
 
-    fun synchronize(remoteNode: RemoteNode){
-        runBlocking {
-            logger.info { "Requesting and waiting for response get last block" }
-            val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getLastBlock", arrayOf(), requestID++)) as JSONRPCResponse<*>
-            val lastBlock = BaseJSONSerializer.deserialize(response.result.toString()) as BaseBlockModel
-            this@BaseNode.handleLastBlock(lastBlock, remoteNode)
-        }
+    suspend fun synchronize(remoteNode: RemoteNode){
+        logger.info { "Requesting and waiting for response get last block" }
+        val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getLastBlock", arrayOf(), requestID++)) as JSONRPCResponse<*>
+        logger.info { "Got last block" }
+        val lastBlock = BaseJSONSerializer.deserialize(response.result.toString()) as BaseBlockModel
+        logger.info { "Last block is $lastBlock" }
+        this@BaseNode.handleLastBlock(lastBlock, remoteNode)
+        logger.info { "Handled" }
     }
 
     val chain: BaseBlockChainProducer = BaseBlockChainProducer(difficulty = 2)
@@ -139,18 +141,14 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
         ))
     }
 
-    override fun connect(remoteNode: RemoteNode): Boolean {
-        return runBlocking {
-//            val response1 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++))
-//            println(response1)
-            val response1 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++)) as JSONRPCResponse<*>
-            val response2 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("nodeType", arrayOf(), this@BaseNode.requestID++)) as JSONRPCResponse<*>
-            return@runBlocking if(response1.result == "peer"){
-                this@BaseNode.peer.addUniqueRemoteNode(remoteNode, response2.result.toString() == "miner")
-                true
-            }else{
-                false
-            }
+    override suspend fun connect(remoteNode: RemoteNode): Boolean {
+        val response1 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++)) as JSONRPCResponse<*>
+        val response2 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("nodeType", arrayOf(), this@BaseNode.requestID++)) as JSONRPCResponse<*>
+        return if(response1.result == "peer"){
+            this@BaseNode.peer.addUniqueRemoteNode(remoteNode, response2.result.toString() == "miner")
+            true
+        }else{
+            false
         }
     }
 }

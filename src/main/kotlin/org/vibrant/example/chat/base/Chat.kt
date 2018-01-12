@@ -80,8 +80,10 @@ class Chat(private val isMiner: Boolean = false){
             "connect" -> {
                 val d = parameters.split(":")
                 logger.info { "Connecting to ${d[0] + d[1].toInt()}" }
-                node.connect(RemoteNode(d[0], d[1].toInt()))
-                node.synchronize(RemoteNode(d[0], d[1].toInt()))
+                runBlocking {
+                    node.connect(RemoteNode(d[0], d[1].toInt()))
+                    node.synchronize(RemoteNode(d[0], d[1].toInt()))
+                }
                 logger.info { "Connected to ${d[0] + d[1].toInt()}" }
             }
             "auth" -> {
