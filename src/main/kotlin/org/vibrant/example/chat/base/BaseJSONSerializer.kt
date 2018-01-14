@@ -18,7 +18,7 @@ import java.util.HashMap
 
 
 object BaseJSONSerializer : ModelSerializer(){
-    override fun deserialize(serialized: String): Model {
+    override fun deserialize(serialized: ByteArray): Model {
         val map: HashMap<String, Any> = jacksonObjectMapper().readValue(serialized, object : TypeReference<Map<String, Any>>(){})
 
         val targetType = when(map["@type"]){
@@ -39,8 +39,8 @@ object BaseJSONSerializer : ModelSerializer(){
         return jacksonObjectMapper().readValue(serialized, targetType)
     }
 
-    override fun serialize(model: Model): String {
-        return jacksonObjectMapper().writeValueAsString(model)
+    override fun serialize(model: Model): ByteArray {
+        return jacksonObjectMapper().writeValueAsBytes(model)
     }
 
 
@@ -54,6 +54,10 @@ object BaseJSONSerializer : ModelSerializer(){
         }else{
             throw Exception("Unexpected json rpc entity")
         }
+    }
+
+    fun deserializeJSONRPC(serialized: ByteArray): JSONRPCEntity {
+        return this.deserializeJSONRPC(String(serialized))
     }
 
 }

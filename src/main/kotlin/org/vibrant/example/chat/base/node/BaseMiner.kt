@@ -1,16 +1,10 @@
 package org.vibrant.example.chat.base.node
 
-import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.runBlocking
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCRequest
-import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
-import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import java.util.*
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Semaphore
-import kotlin.coroutines.experimental.Continuation
 import kotlin.coroutines.experimental.suspendCoroutine
 
 class BaseMiner(port: Int) : BaseNode(port){
@@ -18,15 +12,6 @@ class BaseMiner(port: Int) : BaseNode(port){
 
     private val miner = Miner(this)
 
-    private var continuation: Continuation<Unit>? = null
-
-    private val pendingTransactions = arrayListOf<BaseTransactionModel>()
-
-    abstract class OnMinedListener{
-        abstract fun handle(blockModel: BaseBlockModel)
-    }
-
-    internal val onMined = arrayListOf<OnMinedListener>()
 
     fun addTransaction(transactionModel: BaseTransactionModel){
         runBlocking {
@@ -60,9 +45,9 @@ class BaseMiner(port: Int) : BaseNode(port){
             baseMiner.logger.info { "Block mined" }
             this.pendingTransactions.clear()
             baseMiner.logger.info { "Broadcasting this block..." }
-            val response = baseMiner.peer.broadcastAll(JSONRPCRequest(
+            val response = baseMiner.broadcast(JSONRPCRequest(
                     method = "newBlock",
-                    params = arrayOf(BaseJSONSerializer.serialize(block)),
+                    params = arrayOf(String(BaseJSONSerializer.serialize(block))),
                     id = baseMiner.requestID++
             ))
             baseMiner.logger.info { "Awaited this shit! $response" }

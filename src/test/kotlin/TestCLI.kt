@@ -11,7 +11,6 @@ import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.Chat
 import org.vibrant.example.chat.base.models.BaseBlockChainModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
-import org.vibrant.example.chat.base.node.BaseMiner
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.io.File
@@ -61,7 +60,7 @@ class TestCLI {
         chat1.handleCommand("auth ${tmpFile.absolutePath}")
 
         assertEquals(
-                chat1.node.keyPair!!.private,
+                chat1.keyPair.private,
                 keyPair.private
         )
 
@@ -76,8 +75,8 @@ class TestCLI {
 
 
 
-        chat1.node.keyPair = AccountUtils.generateKeyPair()
-        miner.node.keyPair = AccountUtils.generateKeyPair()
+        chat1.keyPair = AccountUtils.generateKeyPair()
+        miner.keyPair = AccountUtils.generateKeyPair()
 
 
         chat1.handleCommand("connect localhost:${miner.node.peer.port}")
@@ -93,7 +92,7 @@ class TestCLI {
                 chat1.node.peer.miners.size
         )
 
-        chat1.handleCommand("transaction ${HashUtils.bytesToHex(miner.node.keyPair!!.public.encoded)} hello")
+        chat1.handleCommand("transaction ${HashUtils.bytesToHex(miner.keyPair.public.encoded)} hello")
 
         assertEquals(
                 miner.node.chain.produce(BaseJSONSerializer),
@@ -123,8 +122,8 @@ class TestCLI {
         val chat1 = Chat()
         val miner = Chat(true)
 
-        chat1.node.keyPair = AccountUtils.generateKeyPair()
-        miner.node.keyPair = AccountUtils.generateKeyPair()
+        chat1.keyPair = AccountUtils.generateKeyPair()
+        miner.keyPair = AccountUtils.generateKeyPair()
 
 
         chat1.handleCommand("connect localhost:${miner.node.peer.port}")
@@ -172,9 +171,9 @@ class TestCLI {
         val chat2 = Chat()
         val miner = Chat(true)
 
-        chat1.node.keyPair = AccountUtils.generateKeyPair()
-        chat2.node.keyPair = AccountUtils.generateKeyPair()
-        miner.node.keyPair = AccountUtils.generateKeyPair()
+        chat1.keyPair = AccountUtils.generateKeyPair()
+        chat2.keyPair = AccountUtils.generateKeyPair()
+        miner.keyPair = AccountUtils.generateKeyPair()
 
 
         chat1.handleCommand("connect localhost:${miner.node.peer.port}")
@@ -196,7 +195,7 @@ class TestCLI {
                 chat2.node.peer.miners.size
         )
 
-        chat1.handleCommand("transaction ${HashUtils.bytesToHex(chat2.node.keyPair!!.public.encoded)} hello")
+        chat1.handleCommand("transaction ${HashUtils.bytesToHex(chat2.keyPair.public.encoded)} hello")
 
 
         assertEquals(
@@ -238,9 +237,8 @@ class TestCLI {
             else -> {}
         }
 
-        chat1.handleCommand("transaction ${HashUtils.bytesToHex(chat2.node.keyPair!!.public.encoded)} hellothere")
+        chat1.handleCommand("transaction ${HashUtils.bytesToHex(chat2.keyPair.public.encoded)} hellothere")
 
-        println("CCCCCCCCCCCCcccccccCCCCCCCCCCCCCCCCCCCCccccCCcccCCcccCccCCc")
 
         assertEquals(
                 miner.node.chain.produce(BaseJSONSerializer),
@@ -355,16 +353,18 @@ class TestCLI {
         )
 
 
-        val(_, _, result) =  "http://localhost:${chat1.http.port()}/blockchain".httpGet().responseString()
+        val(_, _, result) =  "http://localhost:${chat1.http.port()}/blockchain".httpGet().response()
 
         val bchain = BaseJSONSerializer.deserialize(result.get()) as BaseBlockChainModel
+
+        println(bchain)
 
         assertEquals(
                 2,
                 bchain.blocks.size
         )
 
-        val(_, _, result2) =  "http://localhost:${chat2.http.port()}/blockchain".httpGet().responseString()
+        val(_, _, result2) =  "http://localhost:${chat2.http.port()}/blockchain".httpGet().response()
 
         val bchain2 = BaseJSONSerializer.deserialize(result2.get()) as BaseBlockChainModel
         assertEquals(

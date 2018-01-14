@@ -13,50 +13,13 @@ import java.security.KeyPair
 class TestBaseTransaction {
 
 
+
     @Test
     fun `Base transaction producer`() {
         val sender = AccountUtils.generateKeyPair()
         val transaction = BaseTransactionProducer(
                 "yura",
                 "vasya",
-                BaseMessageModel("Hello!", 0),
-                sender,
-                object : SignatureProducer{
-                    override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
-                        return HashUtils.signData(content, keyPair)
-                    }
-                }
-        ).produce(BaseJSONSerializer)
-
-        assertEquals(
-                "yura",
-                transaction.from
-        )
-
-        assertEquals(
-                "vasya",
-                transaction.to
-        )
-
-        assertEquals(
-                BaseMessageModel("Hello!",0),
-                transaction.payload
-        )
-
-        assertEquals(
-                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer.serialize(BaseMessageModel("Hello!",0)), sender)),
-                transaction.signature
-        )
-
-    }
-
-
-    @Test
-    fun `Base transaction producer 2`() {
-        val sender = AccountUtils.generateKeyPair()
-        val transaction = BaseTransactionProducer(
-                "yura",
-                "vasya",
                 BaseAccountMetaDataModel("Yurii", 0),
                 sender,
                 object : SignatureProducer{
@@ -82,7 +45,7 @@ class TestBaseTransaction {
         )
 
         assertEquals(
-                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer.serialize(BaseAccountMetaDataModel("Yurii", 0)), sender)),
+                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + String(BaseJSONSerializer.serialize(BaseAccountMetaDataModel("Yurii", 0))), sender)),
                 transaction.signature
         )
 
@@ -122,7 +85,7 @@ class TestBaseTransaction {
         )
 
         assertEquals(
-                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseJSONSerializer.serialize(BaseMessageModel("Hello!",0)), sender)),
+                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + String(BaseJSONSerializer.serialize(BaseMessageModel("Hello!",0))), sender)),
                 converted.signature
         )
     }
@@ -145,7 +108,7 @@ class TestBaseTransaction {
         val serialized = BaseJSONSerializer.serialize(transaction)
         assertEquals(
                 "{\"@type\":\"transaction\",\"from\":\"yura\",\"to\":\"vasya\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello!\",\"timestamp\":0},\"signature\":\"${transaction.signature}\"}",
-                serialized
+                String(serialized)
         )
     }
 }

@@ -7,10 +7,15 @@ import io.javalin.embeddedserver.Location
 import io.javalin.embeddedserver.jetty.websocket.WsSession
 import kotlinx.coroutines.experimental.runBlocking
 import mu.KotlinLogging
+import org.vibrant.core.models.BlockModel
 import org.vibrant.core.node.RemoteNode
+import org.vibrant.core.producers.BlockChainProducer
 import org.vibrant.example.chat.base.models.BaseAccountMetaDataModel
+import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.node.BaseMiner
 import org.vibrant.example.chat.base.node.BaseNode
+import org.vibrant.example.chat.base.node.HTTPPeer
+import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.io.File
@@ -23,9 +28,14 @@ class Chat(private val isMiner: Boolean = false){
 
     private val logger = KotlinLogging.logger {  }
 
+    val node = createNode()
 
+    internal var keyPair = AccountUtils.generateKeyPair()
 
-    internal val node = createNode()
+    internal val vibrant = VibrantChat(
+            node = this@Chat.node
+    )
+
     internal val listeners = arrayListOf<WsSession>()
 
     val http = Javalin.create().ws("/event"){ ws ->
@@ -41,8 +51,8 @@ class Chat(private val isMiner: Boolean = false){
     }.get("account"){ ctx ->
         val map = hashMapOf<String, Any>()
         map["public"] = this@Chat.hexAddress()
-        map["peers"] = this.node.peer.peers
-        map["miners"] = this.node.peer.miners
+        map["peers"] = this.vibrant.node.peer.peers
+        map["miners"] = listOf<RemoteNode>()
         val response = jacksonObjectMapper().writeValueAsString(map)
         ctx.result(response)
     }.post("command"){ ctx ->
@@ -52,28 +62,28 @@ class Chat(private val isMiner: Boolean = false){
     }.enableStaticFiles(
             Chat::class.java.classLoader.getResource("html").toString().substring(5),
             Location.EXTERNAL
-    ).port(node.peer.port + 1001).start()
+    ).port(vibrant.node.peer.port + 1001).start()
 
     internal fun hexAddress(): String{
-        return HashUtils.bytesToHex(this.node.keyPair?.public?.encoded!!)
+        return HashUtils.bytesToHex(keyPair.public.encoded!!)
     }
 
     init {
-//        logger.info { "Starting chat http on port ${node.peer.port + 1001}" }
-        this.node.start()
-        this.node.onNextBlock.add { block ->
-            this.listeners.forEach{
-                val response = jacksonObjectMapper().writeValueAsString(block)
-                logger.info { response }
-                it.send(response)
+        this.vibrant.start()
+        this.node.chain.addNewBlockListener(object : BaseBlockChainProducer.NewBlockListener() {
+            override fun nextBlock(blockModel: BaseBlockModel) {
+                this@Chat.listeners.forEach{
+                    val response = jacksonObjectMapper().writeValueAsString(blockModel)
+                    logger.info { response }
+                    it.send(response)
+                }
             }
-        }
-//
+        })
 
     }
 
     fun setAccount(keyPair: KeyPair){
-        this.node.keyPair = keyPair
+        this.keyPair = keyPair
         logger.info { "Account: ${this@Chat.hexAddress()}" }
     }
 
@@ -83,16 +93,13 @@ class Chat(private val isMiner: Boolean = false){
             "connect" -> {
                 val d = parameters.split(":")
                 logger.info { "Connecting to ${d[0] + d[1].toInt()}" }
-                runBlocking {
-                    node.connect(RemoteNode(d[0], d[1].toInt()))
-                    node.synchronize(RemoteNode(d[0], d[1].toInt()))
-                }
+                vibrant.node.connect(RemoteNode(d[0], d[1].toInt()))
                 logger.info { "Connected to ${d[0] + d[1].toInt()}" }
             }
             "auth" -> {
                 val keyFile = File(parameters)
                 logger.info { "Getting key from $parameters" }
-                node.keyPair = AccountUtils.deserializeKeyPair(keyFile.readBytes())
+                this.keyPair = AccountUtils.deserializeKeyPair(keyFile.readBytes())
                 logger.info { "Authed." }
             }
             "transaction" -> {
@@ -110,36 +117,31 @@ class Chat(private val isMiner: Boolean = false){
     }
 
     private fun changeName(name: String) {
-        val response = node.transaction(this@Chat.hexAddress(), BaseAccountMetaDataModel(name, Date().time))
+        val response = this.node.transaction(this@Chat.hexAddress(), BaseAccountMetaDataModel(name, Date().time), keyPair)
         logger.info { "Transaction broadcasted(change name) $response" }
     }
 
 
     private fun createNode(): BaseNode {
-        val node: BaseNode?
+        println(vibrant)
         var port = 7000
         while(true){
             port++
             try {
                 Socket("localhost", port).close()
             }catch (e: Exception){
-                node = if(isMiner) BaseMiner(port) else BaseNode(port)
-                logger.info { "Port already in use $port, trying another... $e" }
-                break
+                return if(isMiner) BaseMiner(port) else BaseNode(port)
             }
         }
-        return node!!
     }
 
 
-
     fun message(hexAddressTo: String, message: String){
-        val response = node.transaction(hexAddressTo, message)
+        val response = this.node.transaction(hexAddressTo, message, keyPair)
         logger.info { "Transaction broadcasted (message) $response" }
     }
 
     fun stop(){
         this.http.stop()
-        this.node.stop()
     }
 }

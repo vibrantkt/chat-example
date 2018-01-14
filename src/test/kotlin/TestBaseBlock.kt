@@ -71,7 +71,7 @@ class TestBaseBlock {
                 block.index.toString() +
                         block.prevHash +
                         block.timestamp +
-                        block.transactions.map{ return@map BaseJSONSerializer.serialize(it)}.joinToString("") +
+                        String(block.transactions.map{ return@map BaseJSONSerializer.serialize(it)}.reduceRight({a, b -> a + b})) +
                         block.nonce
 
         assertEquals(
@@ -125,14 +125,11 @@ class TestBaseBlock {
 
         ).produce(BaseJSONSerializer)
 
-        val payload = (block.index.toString() + block.prevHash + block.timestamp + block.transactions.map{ return@map BaseJSONSerializer.serialize(it)}.joinToString("") + block.nonce)
-        val hash = HashUtils.bytesToHex(
-                HashUtils.sha256(payload.toByteArray())
-        )
+        val hash = block.hash
 
         assertEquals(
                 "{\"@type\":\"block\",\"index\":1,\"hash\":\"$hash\",\"prevHash\":\"prevBlockHash\",\"timestamp\":1000,\"transactions\":[{\"@type\":\"transaction\",\"from\":\"User1\",\"to\":\"User2\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello, user2!!\",\"timestamp\":0},\"signature\":\"${transaction1.signature}\"},{\"@type\":\"transaction\",\"from\":\"User2\",\"to\":\"User1\",\"payload\":{\"@type\":\"message\",\"content\":\"Well, hello!\",\"timestamp\":0},\"signature\":\"${transaction2.signature}\"}],\"nonce\":0}",
-                BaseJSONSerializer.serialize(block)
+                String(BaseJSONSerializer.serialize(block))
         )
     }
 

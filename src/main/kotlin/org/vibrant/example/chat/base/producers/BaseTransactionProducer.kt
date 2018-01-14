@@ -33,7 +33,7 @@ open class BaseTransactionProducer(
                 to,
                 payload,
                 HashUtils.bytesToHex(
-                        signatureProducer.produceSignature((this.from + this.to + serializer.serialize(this.payload)).toByteArray(), keyPair)
+                        signatureProducer.produceSignature((this.from + this.to + String(serializer.serialize(this.payload))).toByteArray(), keyPair)
                 )
         )
     }

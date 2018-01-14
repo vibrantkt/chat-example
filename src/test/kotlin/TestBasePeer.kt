@@ -1,64 +1,75 @@
-import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.newSingleThreadContext
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.vibrant.core.algorithm.SignatureProducer
+import org.vibrant.core.node.RemoteNode
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCRequest
 import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.node.BaseMiner
 import org.vibrant.example.chat.base.node.BaseNode
+import org.vibrant.example.chat.base.node.HTTPPeer
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
-import org.vibrant.core.node.RemoteNode
-import org.vibrant.core.algorithm.SignatureProducer
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
+import java.net.Socket
 import java.security.KeyPair
-import java.util.concurrent.CountDownLatch
-import kotlin.coroutines.experimental.suspendCoroutine
 
 class TestBasePeer {
 
+    private fun createNode(isMiner: Boolean): BaseNode {
+        var port = 7000
+        while(true){
+            port++
+            try {
+                Socket("localhost", port).close()
+            }catch (e: Exception){
+                val node = if(isMiner) BaseMiner(port) else BaseNode(port)
+                node.start()
+                return node
+            }
+        }
+    }
 
     @Test
     fun `Test peer echo`(){
-        val node = BaseNode(7000)
-        val miner = BaseMiner(7001)
+
+        val node = createNode(false)
+
+
+        val miner = createNode(true) as BaseMiner
 
 
         node.start()
         miner.start()
 
-        runBlocking {
-            val some = node.connect(RemoteNode("localhost", 7001))
-            assertEquals(
-                    true,
-                    some
-            )
-        }
+        val some = node.connect(RemoteNode("localhost", miner.peer.port))
+        assertEquals(
+                true,
+                some
+        )
 
         // connection established
 
         assertEquals(
-                node.peer.peers.size,
-                1
+                1,
+                node.peer.peers.size
         )
 
         assertEquals(
-                node.peer.miners.size,
-                1
+                1,
+                node.peer.miners.size
         )
 
         assertEquals(
-                miner.peer.peers.size,
-                1
+                1,
+                miner.peer.peers.size
         )
 
-        //cuz node isn't a
+        //cuz node isn't a mienr
         assertEquals(
-                miner.peer.miners.size,
-                0
+                0,
+                miner.peer.miners.size
         )
 
 
@@ -69,16 +80,12 @@ class TestBasePeer {
 
     @Test
     fun `Test peer return type`(){
-        val node = BaseNode(7000)
-        val miner = BaseMiner(7001)
+        val node = createNode(false)
+        val miner = createNode(true) as BaseMiner
 
 
-        node.start()
-        miner.start()
-
-
-        val expectedNode = node.rpc.nodeType(JSONRPCRequest("a", arrayOf(),1L), RemoteNode("", 0))
-        val expectedMiner = miner.rpc.nodeType(JSONRPCRequest("a", arrayOf(),1L), RemoteNode("", 0))
+        val expectedNode = node.rpc.nodeType(JSONRPCRequest("nodeType", arrayOf("node"),1L), RemoteNode("", 0))
+        val expectedMiner = miner.rpc.nodeType(JSONRPCRequest("nodeType", arrayOf("node"),1L), RemoteNode("", 0))
 
         assertEquals(
                 "node",
@@ -97,12 +104,8 @@ class TestBasePeer {
 
     @Test
     fun `Test peer behind sync`(){
-        val node = BaseNode(7000)
-        val miner = BaseMiner(7001)
-
-
-        node.start()
-        miner.start()
+        val node = createNode(false)
+        val miner = createNode(true) as BaseMiner
 
         miner.chain.pushBlock(node.chain.createBlock(
                 listOf(),
@@ -112,8 +115,8 @@ class TestBasePeer {
 
         runBlocking {
 
-            node.connect(RemoteNode("localhost", 7001))
-            node.synchronize(RemoteNode("localhost", 7001))
+            node.connect(RemoteNode("localhost", miner.peer.port))
+            node.synchronize(RemoteNode("localhost", miner.peer.port))
         }
 
 
@@ -166,7 +169,7 @@ class TestBasePeer {
                 chain.blocks[1].hash.substring(0, miner.chain.difficulty)
         )
 
-        miner.stop()
+//        miner.stop()
 
 //        thread.cancel()
 
@@ -205,7 +208,7 @@ class TestBasePeer {
         runBlocking {
             val response = node.peer.request(RemoteNode("localhost", 7001), JSONRPCRequest(
                     method = "addTransaction",
-                    params = arrayOf(BaseJSONSerializer.serialize(transaction)),
+                    params = arrayOf(String(BaseJSONSerializer.serialize(transaction))),
                     id = 5
             ))
 
@@ -265,7 +268,7 @@ class TestBasePeer {
                 BaseJSONSerializer
         ))
 
-        miner.connectToNode(RemoteNode("localhost", 7000))
+        miner.connect(RemoteNode("localhost", 7000))
         miner.synchronize(RemoteNode("localhost", 7000))
 
         assertEquals(

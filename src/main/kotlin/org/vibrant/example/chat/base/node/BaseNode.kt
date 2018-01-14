@@ -2,10 +2,14 @@ package org.vibrant.example.chat.base.node
 
 import kotlinx.coroutines.experimental.runBlocking
 import mu.KotlinLogging
+import org.vibrant.core.ModelSerializer
 import org.vibrant.core.algorithm.SignatureProducer
+import org.vibrant.core.models.Model
 import org.vibrant.core.node.AbstractNode
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.example.chat.base.BaseJSONSerializer
+import org.vibrant.example.chat.base.VibrantChat
+import org.vibrant.example.chat.base.jsonrpc.JSONRPCEntity
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCRequest
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.models.BaseBlockChainModel
@@ -18,12 +22,23 @@ import org.vibrant.example.chat.base.util.HashUtils
 import java.security.KeyPair
 import java.util.*
 
-open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChainProducer>() {
+@Suppress("USELESS_IS_CHECK")
+open class BaseNode(port: Int) : AbstractNode<JSONRPCEntity>() {
+
+    val peer = HTTPPeer(port, { bytes, remoteNode ->
+        this.handle(BaseJSONSerializer.deserializeJSONRPC(bytes), remoteNode)
+    })
+
+
+    override fun request(payload: JSONRPCEntity, remoteNode: RemoteNode): JSONRPCEntity {
+        return peer.request(remoteNode, payload as JSONRPCRequest)
+    }
+
+
     protected var requestID = 0L
     protected val logger = KotlinLogging.logger {  }
 
     @Suppress("LeakingThis") internal val rpc = BaseJSONRPCProtocol(this)
-    internal val peer = HTTPPeer(this, port)
 
     internal val possibleAheads = arrayListOf<RemoteNode>()
 
@@ -31,14 +46,17 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
     val onNextBlock = arrayListOf<(BaseBlockModel) -> Unit>()
 
 
-    var keyPair: KeyPair? = null
-
     override fun start() {
         this.peer.start()
     }
 
     override fun stop() {
         this.peer.stop()
+    }
+
+    fun handle(data: Model, from: RemoteNode): ByteArray {
+        val response = this.rpc.invoke(data as JSONRPCRequest, from)
+        return BaseJSONSerializer.serialize(response)
     }
 
     fun handleLastBlock(lastBlock: BaseBlockModel, remoteNode: RemoteNode){
@@ -55,8 +73,14 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
                 }
                 lastBlock.index > latestBlock.index -> {
                     logger.info { "My chain is behind, requesting full chain" }
-                    val chainResponse = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getFullChain", arrayOf(), requestID++))
-                    val model = BaseJSONSerializer.deserialize(chainResponse.result.toString()) as BaseBlockChainModel
+
+
+                    val chainResponse = this@BaseNode.request(
+                            JSONRPCRequest("getFullChain", arrayOf(), requestID++),
+                            remoteNode
+                    ) as JSONRPCResponse<*>
+
+                    val model = BaseJSONSerializer.deserialize(chainResponse.result.toString().toByteArray()) as BaseBlockChainModel
                     val tmpChain = BaseBlockChainProducer.instantiate(
                             model
                     )
@@ -75,7 +99,7 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
                 }
                 else -> {
                     logger.info { "Wow i request sync with me" }
-                    val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("syncWithMe", arrayOf(), requestID++))
+                    val response = this@BaseNode.request(JSONRPCRequest("syncWithMe", arrayOf(), requestID++), remoteNode)
                     logger.info { "Got response! $response" }
                 }
             }
@@ -87,9 +111,10 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
 
     fun synchronize(remoteNode: RemoteNode){
         logger.info { "Requesting and waiting for response get last block" }
-        val response = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("getLastBlock", arrayOf(), requestID++))
-        logger.info { "Got last block" }
-        val lastBlock = BaseJSONSerializer.deserialize(response.result.toString()) as BaseBlockModel
+        val response = this@BaseNode.request(JSONRPCRequest("getLastBlock", arrayOf(), requestID++), remoteNode) as JSONRPCResponse<*>
+        logger.info { "Got last block ${response.result}" }
+
+        val lastBlock = BaseJSONSerializer.deserialize(response.result.toString().toByteArray()) as BaseBlockModel
         logger.info { "Last block is $lastBlock" }
         this@BaseNode.handleLastBlock(lastBlock, remoteNode)
         logger.info { "Handled" }
@@ -98,12 +123,12 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
     val chain: BaseBlockChainProducer = BaseBlockChainProducer(difficulty = 2)
 
 
-    fun transaction(to: String, payload: String): List<JSONRPCResponse<*>> {
+    fun transaction(to: String, payload: String, keyPair: KeyPair): List<JSONRPCResponse<*>> {
         val transaction = BaseTransactionProducer(
-                HashUtils.bytesToHex(this@BaseNode.keyPair!!.public.encoded),
+                HashUtils.bytesToHex(keyPair.public.encoded),
                 to,
                 BaseMessageModel(payload, Date().time),
-                this@BaseNode.keyPair!!,
+                keyPair,
                 object : SignatureProducer {
                     override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
                         return HashUtils.signData(content, keyPair)
@@ -111,20 +136,20 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
                 }
         ).produce(BaseJSONSerializer)
 
-        return this.peer.broadcastMiners(JSONRPCRequest(
+        return this.broadcastMiners(JSONRPCRequest(
                 method = "addTransaction",
-                params = arrayOf(BaseJSONSerializer.serialize(transaction)),
+                params = arrayOf(String(BaseJSONSerializer.serialize(transaction))),
                 id = this.requestID++
         ))
     }
 
 
-    fun transaction(to: String, payload: TransactionPayload): List<JSONRPCResponse<*>>{
+    fun transaction(to: String, payload: TransactionPayload, keyPair: KeyPair): List<JSONRPCResponse<*>>{
         val transaction = BaseTransactionProducer(
-                HashUtils.bytesToHex(this@BaseNode.keyPair!!.public.encoded),
+                HashUtils.bytesToHex(keyPair.public.encoded),
                 to,
                 payload,
-                this@BaseNode.keyPair!!,
+                keyPair,
                 object : SignatureProducer {
                     override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
                         return HashUtils.signData(content, keyPair)
@@ -132,26 +157,34 @@ open class BaseNode(port: Int) : AbstractNode<BaseBlockChainModel, BaseBlockChai
                 }
         ).produce(BaseJSONSerializer)
 
-        return this.peer.broadcastMiners(JSONRPCRequest(
+        return this.broadcastMiners(JSONRPCRequest(
                 method = "addTransaction",
-                params = arrayOf(BaseJSONSerializer.serialize(transaction)),
+                params = arrayOf(String(BaseJSONSerializer.serialize(transaction))),
                 id = this.requestID++
-        ))
+        ))//.map { it }
     }
 
-    @Suppress("RedundantSuspendModifier")
-    override suspend fun connect(remoteNode: RemoteNode): Boolean {
-        return this.connectToNode(remoteNode)
+    override fun connect(remoteNode: RemoteNode): Boolean {
+        val response1 = this@BaseNode.request(JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++), remoteNode) as JSONRPCResponse<*>
+        val response2 = this@BaseNode.request(JSONRPCRequest("nodeType", arrayOf(when(this){
+            is BaseMiner -> "miner"
+            is BaseNode -> "node"
+            else -> "node"
+        }), this@BaseNode.requestID++), remoteNode) as JSONRPCResponse<*>
+        this.synchronize(remoteNode)
+        this.peer.addUniqueRemoteNode(remoteNode, response2.result.toString() == "miner")
+
+        logger.info { response2.result }
+        return response1.result == "peer"
     }
 
-    fun connectToNode(remoteNode: RemoteNode): Boolean{
-        val response1 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("echo", arrayOf("peer"), this@BaseNode.requestID++))
-        val response2 = this@BaseNode.peer.request(remoteNode, JSONRPCRequest("nodeType", arrayOf(), this@BaseNode.requestID++))
-        return if(response1.result == "peer"){
-            this@BaseNode.peer.addUniqueRemoteNode(remoteNode, response2.result.toString() == "miner")
-            true
-        }else{
-            false
-        }
+
+    fun broadcast(data: JSONRPCRequest): List<JSONRPCResponse<*>> {
+        return this.peer.broadcastAll(data)
     }
+
+    fun broadcastMiners(data: JSONRPCRequest): List<JSONRPCResponse<*>> {
+        return this.peer.broadcastMiners(data)
+    }
+
 }

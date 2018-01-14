@@ -20,9 +20,13 @@ class BaseBlockProducer(
 
 
     override fun produce(serializer: ModelSerializer): BaseBlockModel {
-        val transactionsContent = transactions.map {
-            return@map serializer.serialize(it)
-        }.joinToString("")
+        val transactionsContent = String(
+                transactions
+                        .map { serializer.serialize(it) }
+                        .fold(byteArrayOf()){a, b -> a + b}
+        )
+
+
 
         val hash = if(difficulty == 0){
             val payload = this.index.toString() + this.prevBlockHash + this.timestamp + transactionsContent + this.nonce

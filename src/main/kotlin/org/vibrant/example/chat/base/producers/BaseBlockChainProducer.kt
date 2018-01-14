@@ -15,6 +15,11 @@ class BaseBlockChainProducer(val difficulty: Int = 1) : BlockChainProducer<BaseB
 
     internal val onChange = arrayListOf<(BlockChainProducer<BaseBlockChainModel>) -> Unit>()
 
+    private val listeners = arrayListOf<NewBlockListener>()
+    fun addNewBlockListener(newBlockListener: NewBlockListener){
+        this.listeners.add(newBlockListener)
+    }
+
     override fun produce(serializer: ModelSerializer): BaseBlockChainModel {
         return BaseBlockChainModel(
                 blocks
@@ -78,6 +83,7 @@ class BaseBlockChainProducer(val difficulty: Int = 1) : BlockChainProducer<BaseB
 
     private fun handleChange(){
         this.onChange.forEach { it(this@BaseBlockChainProducer) }
+        this.listeners.forEach{ it.nextBlock(this.latestBlock()) }
     }
 
     companion object {
@@ -89,5 +95,14 @@ class BaseBlockChainProducer(val difficulty: Int = 1) : BlockChainProducer<BaseB
             return producer
         }
     }
+
+
+
+
+    abstract class NewBlockListener{
+        abstract fun nextBlock(blockModel: BaseBlockModel)
+    }
+
+
 
 }

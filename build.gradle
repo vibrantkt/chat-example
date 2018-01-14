@@ -35,7 +35,9 @@ dependencies {
     // https://mvnrepository.com/artifact/org.eclipse.jetty.websocket/websocket-server
     compile group: 'org.eclipse.jetty.websocket', name: 'websocket-server', version: '9.4.8.v20171121'
 
-    compile 'com.github.vibrantkt:core:0.1.52-alpha'
+
+    compile 'com.github.vibrantkt:core:0.1.7-alpha'
+
 
     compile 'io.javalin:javalin:1.2.1'
 
@@ -59,4 +61,8 @@ kotlin {
 
 task sampleTest(type: Test, dependsOn: testClasses) {
     include 'TestBasePeer'
+}
+
+configurations.all {
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
 }

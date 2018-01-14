@@ -4,7 +4,6 @@ package org.vibrant.example.chat.base.models
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName
-import org.vibrant.core.models.ModelType
 import org.vibrant.core.models.TransactionModel
 
 /***
