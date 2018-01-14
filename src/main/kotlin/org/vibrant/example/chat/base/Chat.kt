@@ -32,9 +32,6 @@ class Chat(private val isMiner: Boolean = false){
 
     internal var keyPair = AccountUtils.generateKeyPair()
 
-    internal val vibrant = VibrantChat(
-            node = this@Chat.node
-    )
 
     internal val listeners = arrayListOf<WsSession>()
 
@@ -51,8 +48,8 @@ class Chat(private val isMiner: Boolean = false){
     }.get("account"){ ctx ->
         val map = hashMapOf<String, Any>()
         map["public"] = this@Chat.hexAddress()
-        map["peers"] = this.vibrant.node.peer.peers
-        map["miners"] = listOf<RemoteNode>()
+        map["peers"] = this.node.peer.peers
+        map["miners"] = this.node.peer.miners
         val response = jacksonObjectMapper().writeValueAsString(map)
         ctx.result(response)
     }.post("command"){ ctx ->
@@ -62,14 +59,14 @@ class Chat(private val isMiner: Boolean = false){
     }.enableStaticFiles(
             Chat::class.java.classLoader.getResource("html").toString().substring(5),
             Location.EXTERNAL
-    ).port(vibrant.node.peer.port + 1001).start()
+    ).port(node.peer.port + 1000).start()
 
     internal fun hexAddress(): String{
         return HashUtils.bytesToHex(keyPair.public.encoded!!)
     }
 
     init {
-        this.vibrant.start()
+        this.node.start()
         this.node.chain.addNewBlockListener(object : BaseBlockChainProducer.NewBlockListener() {
             override fun nextBlock(blockModel: BaseBlockModel) {
                 this@Chat.listeners.forEach{
@@ -93,7 +90,7 @@ class Chat(private val isMiner: Boolean = false){
             "connect" -> {
                 val d = parameters.split(":")
                 logger.info { "Connecting to ${d[0] + d[1].toInt()}" }
-                vibrant.node.connect(RemoteNode(d[0], d[1].toInt()))
+                node.connect(RemoteNode(d[0], d[1].toInt()))
                 logger.info { "Connected to ${d[0] + d[1].toInt()}" }
             }
             "auth" -> {
@@ -123,7 +120,6 @@ class Chat(private val isMiner: Boolean = false){
 
 
     private fun createNode(): BaseNode {
-        println(vibrant)
         var port = 7000
         while(true){
             port++

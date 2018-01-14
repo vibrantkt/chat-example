@@ -22,6 +22,7 @@ class BaseBlockChainProducer(val difficulty: Int = 1) : BlockChainProducer<BaseB
 
     override fun produce(serializer: ModelSerializer): BaseBlockChainModel {
         return BaseBlockChainModel(
+                difficulty,
                 blocks
         )
     }

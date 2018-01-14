@@ -26,9 +26,8 @@ class BaseMiner(port: Int) : BaseNode(port){
         private var isMining = false
 
         suspend fun addTransaction(transactionModel: BaseTransactionModel) = suspendCoroutine<Unit> {
-            if(isMining){
-                this@Miner.pendingTransactions.add(transactionModel)
-            }else{
+            this@Miner.pendingTransactions.add(transactionModel)
+            if(!isMining){
                 this@Miner.mine()
                 it.resume(Unit)
             }

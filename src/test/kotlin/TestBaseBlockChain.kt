@@ -90,7 +90,7 @@ class TestBaseBlockChain {
 
         val serialized = BaseJSONSerializer.serialize(chain.produce(BaseJSONSerializer))
         assertEquals(
-                "{\"@type\":\"blockchain\",\"blocks\":[{\"@type\":\"block\",\"index\":0,\"hash\":\"Genesis block hash\",\"prevHash\":\"\",\"timestamp\":0,\"transactions\":[],\"nonce\":${0}},{\"@type\":\"block\",\"index\":1,\"hash\":\"${b.hash}\",\"prevHash\":\"Genesis block hash\",\"timestamp\":${0},\"transactions\":[{\"@type\":\"transaction\",\"from\":\"User1\",\"to\":\"User2\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello user 2\",\"timestamp\":${0}},\"signature\":\"${transaction1.signature}\"},{\"@type\":\"transaction\",\"from\":\"User2\",\"to\":\"User1\",\"payload\":{\"@type\":\"message\",\"content\":\"Well, hello!\",\"timestamp\":${0}},\"signature\":\"${transaction2.signature}\"}],\"nonce\":${b.nonce}}]}",
+                "{\"@type\":\"blockchain\",\"difficulty\":1,\"blocks\":[{\"@type\":\"block\",\"index\":0,\"hash\":\"Genesis block hash\",\"prevHash\":\"\",\"timestamp\":0,\"transactions\":[],\"nonce\":${0}},{\"@type\":\"block\",\"index\":1,\"hash\":\"${b.hash}\",\"prevHash\":\"Genesis block hash\",\"timestamp\":${0},\"transactions\":[{\"@type\":\"transaction\",\"from\":\"User1\",\"to\":\"User2\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello user 2\",\"timestamp\":${0}},\"signature\":\"${transaction1.signature}\"},{\"@type\":\"transaction\",\"from\":\"User2\",\"to\":\"User1\",\"payload\":{\"@type\":\"message\",\"content\":\"Well, hello!\",\"timestamp\":${0}},\"signature\":\"${transaction2.signature}\"}],\"nonce\":${b.nonce}}]}",
                 String(serialized)
         )
     }

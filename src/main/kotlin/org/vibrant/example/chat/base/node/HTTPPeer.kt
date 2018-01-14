@@ -30,13 +30,6 @@ class HTTPPeer(val port: Int, val handler: (ByteArray, RemoteNode) -> ByteArray)
     private fun createServer(): Javalin {
         return Javalin
                 .create()
-                .before{ ctx ->
-                    val remotePort = ctx.header("peer-port")?.toInt()
-                    if(remotePort != null){
-                        logger.info { "Got request from  ${ctx.request().remoteAddr}:$remotePort" }
-                        this@HTTPPeer.addUniqueRemoteNode(RemoteNode(ctx.request().remoteAddr, remotePort), false)
-                    }
-                }
                 .post("rpc", { ctx ->
                     val remotePort = ctx.header("peer-port")?.toInt()
                     if (remotePort != null) {
