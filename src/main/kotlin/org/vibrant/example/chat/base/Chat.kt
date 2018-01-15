@@ -5,21 +5,16 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.javalin.Javalin
 import io.javalin.embeddedserver.Location
 import io.javalin.embeddedserver.jetty.websocket.WsSession
-import kotlinx.coroutines.experimental.runBlocking
 import mu.KotlinLogging
-import org.vibrant.core.models.BlockModel
 import org.vibrant.core.node.RemoteNode
-import org.vibrant.core.producers.BlockChainProducer
 import org.vibrant.example.chat.base.models.BaseAccountMetaDataModel
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.node.BaseMiner
-import org.vibrant.example.chat.base.node.BaseNode
-import org.vibrant.example.chat.base.node.HTTPPeer
+import org.vibrant.example.chat.base.node.Node
 import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.io.File
-import java.net.ServerSocket
 import java.net.Socket
 import java.security.KeyPair
 import java.util.*
@@ -114,26 +109,26 @@ class Chat(private val isMiner: Boolean = false){
     }
 
     private fun changeName(name: String) {
-        val response = this.node.transaction(this@Chat.hexAddress(), BaseAccountMetaDataModel(name, Date().time), keyPair)
+        val response = this.node.changeName(this@Chat.hexAddress(), name, keyPair)
         logger.info { "Transaction broadcasted(change name) $response" }
     }
 
 
-    private fun createNode(): BaseNode {
+    private fun createNode(): Node {
         var port = 7000
         while(true){
             port++
             try {
                 Socket("localhost", port).close()
             }catch (e: Exception){
-                return if(isMiner) BaseMiner(port) else BaseNode(port)
+                return if(isMiner) BaseMiner(port) else Node(port)
             }
         }
     }
 
 
     fun message(hexAddressTo: String, message: String){
-        val response = this.node.transaction(hexAddressTo, message, keyPair)
+        val response = this.node.message(hexAddressTo, message, keyPair)
         logger.info { "Transaction broadcasted (message) $response" }
     }
 

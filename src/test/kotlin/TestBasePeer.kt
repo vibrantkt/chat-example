@@ -1,30 +1,30 @@
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.vibrant.base.rpc.json.JSONRPCRequest
 import org.vibrant.core.algorithm.SignatureProducer
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.example.chat.base.BaseJSONSerializer
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCRequest
 import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.node.BaseMiner
-import org.vibrant.example.chat.base.node.BaseNode
-import org.vibrant.example.chat.base.node.HTTPPeer
+import org.vibrant.example.chat.base.node.Node
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
+import org.vibrant.example.chat.base.util.serialize
 import java.net.Socket
 import java.security.KeyPair
 
 class TestBasePeer {
 
-    private fun createNode(isMiner: Boolean): BaseNode {
+    private fun createNode(isMiner: Boolean): Node {
         var port = 7000
         while(true){
             port++
             try {
                 Socket("localhost", port).close()
             }catch (e: Exception){
-                val node = if(isMiner) BaseMiner(port) else BaseNode(port)
+                val node = if(isMiner) BaseMiner(port) else Node(port)
                 node.start()
                 return node
             }
@@ -155,7 +155,9 @@ class TestBasePeer {
                 }
         ).produce(BaseJSONSerializer)
 
-        miner.addTransaction(transaction)
+        runBlocking {
+            miner.addTransaction(transaction)
+        }
 
         val chain = miner.chain.produce(BaseJSONSerializer)
 
@@ -168,11 +170,6 @@ class TestBasePeer {
                 "0".repeat(miner.chain.difficulty),
                 chain.blocks[1].hash.substring(0, miner.chain.difficulty)
         )
-
-//        miner.stop()
-
-//        thread.cancel()
-
 
     }
 
@@ -193,7 +190,7 @@ class TestBasePeer {
                 }
         ).produce(BaseJSONSerializer)
 
-        val node = BaseNode(7000)
+        val node = Node(7000)
         val miner = BaseMiner(7001)
 
         node.start()
@@ -208,7 +205,7 @@ class TestBasePeer {
         runBlocking {
             val response = node.peer.request(RemoteNode("localhost", 7001), JSONRPCRequest(
                     method = "addTransaction",
-                    params = arrayOf(String(BaseJSONSerializer.serialize(transaction))),
+                    params = arrayOf(transaction.serialize()),
                     id = 5
             ))
 
@@ -257,7 +254,7 @@ class TestBasePeer {
                 }
         ).produce(BaseJSONSerializer)
 
-        val node = BaseNode(7000)
+        val node = Node(7000)
         val miner = BaseMiner(7001)
 
         node.start()

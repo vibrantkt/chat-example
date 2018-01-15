@@ -2,26 +2,25 @@
 
 package org.vibrant.example.chat.base.node
 
-import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.runBlocking
-import mu.KotlinLogging
+import org.vibrant.base.rpc.json.JSONRPC
+import org.vibrant.base.rpc.json.JSONRPCRequest
 import org.vibrant.example.chat.base.BaseJSONSerializer
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCRequest
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.core.node.RemoteNode
+import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
+import org.vibrant.example.chat.base.util.serialize
 
-open class BaseJSONRPCProtocol(val node: BaseNode) {
-
-    private val logger = KotlinLogging.logger{}
-
+open class BaseJSONRPCProtocol(val node: Node): JSONRPC() {
 
     @JSONRPCMethod
-    fun addTransaction(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
+    fun addTransaction(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*> {
         val transaction = BaseJSONSerializer.deserialize(request.params[0].toString().toByteArray()) as BaseTransactionModel
         if(node is BaseMiner){
-            node.addTransaction(transaction)
+            runBlocking {
+                node.addTransaction(transaction)
+            }
         }
         logger.info { "Returning: Block mined!" }
         return JSONRPCResponse(
@@ -35,7 +34,7 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
     @JSONRPCMethod
     fun getLastBlock(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
         return JSONRPCResponse(
-                result = String(BaseJSONSerializer.serialize(node.chain.latestBlock())),
+                result = node.chain.latestBlock().serialize(),
                 error = null,
                 id = request.id
         )
@@ -48,7 +47,7 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
         val blockModel = BaseJSONSerializer.deserialize(request.params[0].toString().toByteArray()) as BaseBlockModel
         node.handleLastBlock(blockModel, remoteNode)
         return JSONRPCResponse(
-                result = String(BaseJSONSerializer.serialize(node.chain.latestBlock())),
+                result = node.chain.latestBlock().serialize(),
                 error = null,
                 id = request.id
         )
@@ -71,7 +70,7 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
     @JSONRPCMethod
     fun getFullChain(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
         return JSONRPCResponse(
-                result = String(BaseJSONSerializer.serialize(node.chain.produce(BaseJSONSerializer))),
+                result = node.chain.produce(BaseJSONSerializer).serialize(),
                 error = null,
                 id = request.id
         )
@@ -85,7 +84,7 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
         return JSONRPCResponse(
                 result = when(node){
                     is BaseMiner -> "miner"
-                    is BaseNode -> "node"
+                    is Node -> "node"
                     else -> "node"
                 },
                 error = null,
@@ -101,9 +100,5 @@ open class BaseJSONRPCProtocol(val node: BaseNode) {
                 error = null,
                 id = request.id
         )
-    }
-
-    fun invoke(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*> {
-        return this::class.java.getMethod(request.method, JSONRPCRequest::class.java, RemoteNode::class.java).invoke(this, request, remoteNode) as JSONRPCResponse<*>
     }
 }

@@ -8,6 +8,7 @@ import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
+import org.vibrant.example.chat.base.util.serialize
 import java.security.KeyPair
 
 class TestBaseTransaction {
@@ -45,7 +46,7 @@ class TestBaseTransaction {
         )
 
         assertEquals(
-                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + String(BaseJSONSerializer.serialize(BaseAccountMetaDataModel("Yurii", 0))), sender)),
+                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseAccountMetaDataModel("Yurii", 0).serialize(), sender)),
                 transaction.signature
         )
 
@@ -85,7 +86,7 @@ class TestBaseTransaction {
         )
 
         assertEquals(
-                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + String(BaseJSONSerializer.serialize(BaseMessageModel("Hello!",0))), sender)),
+                HashUtils.bytesToHex(AccountUtils.signData("yuravasya" + BaseMessageModel("Hello!",0).serialize(), sender)),
                 converted.signature
         )
     }

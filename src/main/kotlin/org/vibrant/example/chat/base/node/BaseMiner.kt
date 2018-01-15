@@ -2,23 +2,20 @@ package org.vibrant.example.chat.base.node
 
 import kotlinx.coroutines.experimental.runBlocking
 import org.vibrant.example.chat.base.BaseJSONSerializer
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCRequest
+import org.vibrant.base.rpc.json.JSONRPCRequest
+
 import org.vibrant.example.chat.base.models.BaseTransactionModel
+import org.vibrant.example.chat.base.util.serialize
 import java.util.*
 import kotlin.coroutines.experimental.suspendCoroutine
 
-class BaseMiner(port: Int) : BaseNode(port){
+class BaseMiner(port: Int) : Node(port){
 
 
     private val miner = Miner(this)
 
 
-    fun addTransaction(transactionModel: BaseTransactionModel){
-        runBlocking {
-            this@BaseMiner.miner.addTransaction(transactionModel)
-        }
-    }
-
+    suspend fun addTransaction(transactionModel: BaseTransactionModel) = this.miner.addTransaction(transactionModel)
 
     class Miner(private val baseMiner: BaseMiner){
 
@@ -44,10 +41,9 @@ class BaseMiner(port: Int) : BaseNode(port){
             baseMiner.logger.info { "Block mined" }
             this.pendingTransactions.clear()
             baseMiner.logger.info { "Broadcasting this block..." }
-            val response = baseMiner.broadcast(JSONRPCRequest(
-                    method = "newBlock",
-                    params = arrayOf(String(BaseJSONSerializer.serialize(block))),
-                    id = baseMiner.requestID++
+            val response = baseMiner.peer.broadcast(baseMiner.createRequest(
+                    "newBlock",
+                    arrayOf(block.serialize())
             ))
             baseMiner.logger.info { "Awaited this shit! $response" }
             if(this.pendingTransactions.isNotEmpty()){

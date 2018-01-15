@@ -37,6 +37,7 @@ dependencies {
 
 
     compile 'com.github.vibrantkt:core:0.1.700-alpha'
+    compile 'com.github.vibrantkt:base:0.1-alpha'
 
 
     compile 'io.javalin:javalin:1.2.1'

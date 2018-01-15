@@ -1,10 +1,8 @@
 package org.vibrant.example.chat.base
 
-import org.vibrant.example.chat.base.node.BaseNode
-import org.vibrant.example.chat.base.node.HTTPPeer
-import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
+import org.vibrant.example.chat.base.node.Node
 
-class VibrantChat(val node: BaseNode){
+class VibrantChat(val node: Node){
     fun start(){
         this.node.start()
     }

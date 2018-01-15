@@ -7,6 +7,7 @@ import org.vibrant.example.chat.base.producers.BaseBlockProducer
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
+import org.vibrant.example.chat.base.util.serialize
 import java.security.KeyPair
 import java.util.*
 
@@ -71,7 +72,7 @@ class TestBaseBlock {
                 block.index.toString() +
                         block.prevHash +
                         block.timestamp +
-                        String(block.transactions.map{ return@map BaseJSONSerializer.serialize(it)}.reduceRight({a, b -> a + b})) +
+                        block.transactions.map{ it.serialize() }.reduceRight({a, b -> a + b}) +
                         block.nonce
 
         assertEquals(
@@ -129,7 +130,7 @@ class TestBaseBlock {
 
         assertEquals(
                 "{\"@type\":\"block\",\"index\":1,\"hash\":\"$hash\",\"prevHash\":\"prevBlockHash\",\"timestamp\":1000,\"transactions\":[{\"@type\":\"transaction\",\"from\":\"User1\",\"to\":\"User2\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello, user2!!\",\"timestamp\":0},\"signature\":\"${transaction1.signature}\"},{\"@type\":\"transaction\",\"from\":\"User2\",\"to\":\"User1\",\"payload\":{\"@type\":\"message\",\"content\":\"Well, hello!\",\"timestamp\":0},\"signature\":\"${transaction2.signature}\"}],\"nonce\":0}",
-                String(BaseJSONSerializer.serialize(block))
+                block.serialize()
         )
     }
 

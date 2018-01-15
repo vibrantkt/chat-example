@@ -3,8 +3,9 @@ package org.vibrant.example.chat.base
 import com.fasterxml.jackson.annotation.JsonTypeName
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCEntity
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCRequest
+import org.vibrant.base.rpc.json.JSONRPCEntity
+import org.vibrant.base.rpc.json.JSONRPCRequest
+
 import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.models.BaseBlockChainModel
 import org.vibrant.example.chat.base.models.BaseBlockModel
@@ -41,6 +42,11 @@ object BaseJSONSerializer : ModelSerializer(){
 
     override fun serialize(model: Model): ByteArray {
         return jacksonObjectMapper().writeValueAsBytes(model)
+    }
+
+
+    fun serializeToString(model: Model): String {
+        return jacksonObjectMapper().writeValueAsString(model)
     }
 
 
