@@ -36,8 +36,9 @@ dependencies {
     compile group: 'org.eclipse.jetty.websocket', name: 'websocket-server', version: '9.4.8.v20171121'
 
 
-    compile 'com.github.vibrantkt:core:0.1.700-alpha'
-    compile 'com.github.vibrantkt:base:0.1-alpha'
+    compile 'com.github.vibrantkt:core:0.1.8-alpha'
+
+    compile 'com.github.vibrantkt:base:0.2-alpha'
 
 
     compile 'io.javalin:javalin:1.2.1'

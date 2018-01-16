@@ -1,9 +1,6 @@
 package org.vibrant.example.chat.base.node
 
-import kotlinx.coroutines.experimental.runBlocking
 import org.vibrant.example.chat.base.BaseJSONSerializer
-import org.vibrant.base.rpc.json.JSONRPCRequest
-
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.util.serialize
 import java.util.*
@@ -33,7 +30,7 @@ class BaseMiner(port: Int) : Node(port){
         private fun mine(){
             isMining = true
             val timestamp = Date().time
-            val block = baseMiner.chain.pushBlock(baseMiner.chain.createBlock(
+            val block = baseMiner.chain.addBlock(baseMiner.chain.createBlock(
                     this.pendingTransactions,
                     BaseJSONSerializer,
                     timestamp = timestamp

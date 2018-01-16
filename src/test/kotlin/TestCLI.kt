@@ -101,12 +101,12 @@ class TestCLI {
 
         assertEquals(
                 2,
-                miner.node.chain.blocks.size
+                miner.node.chain.blocks().size
         )
 
         assertEquals(
                 2,
-                chat1.node.chain.blocks.size
+                chat1.node.chain.blocks().size
         )
 
 
@@ -150,12 +150,12 @@ class TestCLI {
 
         assertEquals(
                 2,
-                miner.node.chain.blocks.size
+                miner.node.chain.blocks().size
         )
 
         assertEquals(
                 2,
-                chat1.node.chain.blocks.size
+                chat1.node.chain.blocks().size
         )
 
         miner.stop()
@@ -210,16 +210,16 @@ class TestCLI {
 
         assertEquals(
                 2,
-                miner.node.chain.blocks.size
+                miner.node.chain.blocks().size
         )
 
         assertEquals(
                 2,
-                chat1.node.chain.blocks.size
+                chat1.node.chain.blocks().size
         )
         assertEquals(
                 2,
-                chat2.node.chain.blocks.size
+                chat2.node.chain.blocks().size
         )
 
 
@@ -252,16 +252,16 @@ class TestCLI {
 
         assertEquals(
                 3,
-                miner.node.chain.blocks.size
+                miner.node.chain.blocks().size
         )
 
         assertEquals(
                 3,
-                chat1.node.chain.blocks.size
+                chat1.node.chain.blocks().size
         )
         assertEquals(
                 3,
-                chat2.node.chain.blocks.size
+                chat2.node.chain.blocks().size
         )
 
 
@@ -339,17 +339,17 @@ class TestCLI {
 
         assertEquals(
                 2,
-                miner.node.chain.blocks.size
+                miner.node.chain.blocks().size
         )
 
         assertEquals(
                 2,
-                chat1.node.chain.blocks.size
+                chat1.node.chain.blocks().size
         )
 
         assertEquals(
                 2,
-                chat2.node.chain.blocks.size
+                chat2.node.chain.blocks().size
         )
 
 

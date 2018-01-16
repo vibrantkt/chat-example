@@ -1,7 +1,6 @@
 package org.vibrant.example.chat.base.node
 
 import org.vibrant.base.node.JSONRPCNode
-import org.vibrant.base.rpc.json.JSONRPCRequest
 import org.vibrant.core.algorithm.SignatureProducer
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.example.chat.base.BaseJSONSerializer
@@ -51,7 +50,7 @@ open class Node(port: Int) : JSONRPCNode<Peer>() {
             when {
                 // next block
                 lastBlock.index - localLatestBlock.index == 1L && lastBlock.prevHash == localLatestBlock.hash -> {
-                    this@Node.chain.pushBlock(
+                    this@Node.chain.addBlock(
                             lastBlock
                     )
                     logger.info { "I just got next block. Chain good: ${chain.checkIntegrity()}" }

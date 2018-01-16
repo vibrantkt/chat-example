@@ -1,10 +1,9 @@
 package org.vibrant.example.chat.base.producers
 
+import org.vibrant.base.database.blockchain.producers.TransactionProducer
 import org.vibrant.core.ModelSerializer
 import org.vibrant.core.algorithm.SignatureProducer
-import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
-import org.vibrant.core.producers.TransactionProducer
 import org.vibrant.example.chat.base.models.TransactionPayload
 import org.vibrant.example.chat.base.util.HashUtils
 import java.security.KeyPair
@@ -17,7 +16,7 @@ import java.security.KeyPair
  * @property to address of receiver
  * @property payload transaction payload
  * @property keyPair keyPair, which will be used to create signature
- * @property signatureProducer create signature
+ * @property signatureProducer created signature
  *
  */
 open class BaseTransactionProducer(

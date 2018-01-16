@@ -107,7 +107,7 @@ class TestBasePeer {
         val node = createNode(false)
         val miner = createNode(true) as BaseMiner
 
-        miner.chain.pushBlock(node.chain.createBlock(
+        miner.chain.addBlock(node.chain.createBlock(
                 listOf(),
                 BaseJSONSerializer
         ))
@@ -217,12 +217,12 @@ class TestBasePeer {
 
             assertEquals(
                     2,
-                    miner.chain.blocks.size
+                    miner.chain.blocks().size
             )
 
             assertEquals(
                     2,
-                    node.chain.blocks.size
+                    node.chain.blocks().size
             )
 
             assertEquals(
@@ -260,7 +260,7 @@ class TestBasePeer {
         node.start()
         miner.start()
 
-        miner.chain.pushBlock(miner.chain.createBlock(
+        miner.chain.addBlock(miner.chain.createBlock(
                 listOf(transaction),
                 BaseJSONSerializer
         ))
@@ -300,7 +300,7 @@ class TestBasePeer {
 //            }
 //
 //
-//            chain.pushBlock(chain.createBlock(transactions, BaseJSONSerializer))
+//            chain.addBlock(chain.createBlock(transactions, BaseJSONSerializer))
 //        }
 //        println(BaseJSONSerializer.serialize(chain.produce(BaseJSONSerializer)))
 //    }

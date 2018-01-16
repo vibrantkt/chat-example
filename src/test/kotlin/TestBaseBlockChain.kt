@@ -45,7 +45,7 @@ class TestBaseBlockChain {
         ).produce(BaseJSONSerializer)
 
         val chain = BaseBlockChainProducer()
-        val pushedBlock = chain.pushBlock(chain.createBlock(listOf(transaction1, transaction2), BaseJSONSerializer))
+        val pushedBlock = chain.addBlock(chain.createBlock(listOf(transaction1, transaction2), BaseJSONSerializer))
 
 
         assertEquals(
@@ -85,7 +85,7 @@ class TestBaseBlockChain {
         ).produce(BaseJSONSerializer)
 
         val chain = BaseBlockChainProducer()
-        val b = chain.pushBlock(chain.createBlock(listOf(transaction1, transaction2), BaseJSONSerializer, startNonce = 0, timestamp = 0))
+        val b = chain.addBlock(chain.createBlock(listOf(transaction1, transaction2), BaseJSONSerializer, startNonce = 0, timestamp = 0))
 
 
         val serialized = BaseJSONSerializer.serialize(chain.produce(BaseJSONSerializer))
@@ -125,7 +125,7 @@ class TestBaseBlockChain {
         ).produce(BaseJSONSerializer)
 
         val chain = BaseBlockChainProducer()
-        chain.pushBlock(chain.createBlock(listOf(transaction1, transaction2), BaseJSONSerializer))
+        chain.addBlock(chain.createBlock(listOf(transaction1, transaction2), BaseJSONSerializer))
 
 
         val serialized = BaseJSONSerializer.serialize(chain.produce(BaseJSONSerializer))
@@ -169,14 +169,14 @@ class TestBaseBlockChain {
         ).produce(BaseJSONSerializer)
 
         val chain = BaseBlockChainProducer()
-        chain.pushBlock(chain.createBlock(listOf(transaction1, transaction2), BaseJSONSerializer))
+        chain.addBlock(chain.createBlock(listOf(transaction1, transaction2), BaseJSONSerializer))
 
         assertEquals(
                 true,
                 chain.checkIntegrity()
         )
 
-        chain.blocks[0] = BaseBlockModel(
+        chain.blocks()[0] = BaseBlockModel(
                 0,
                 "I CHANGED HASH!",
                 "",

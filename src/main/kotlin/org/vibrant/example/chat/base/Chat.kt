@@ -6,12 +6,11 @@ import io.javalin.Javalin
 import io.javalin.embeddedserver.Location
 import io.javalin.embeddedserver.jetty.websocket.WsSession
 import mu.KotlinLogging
+import org.vibrant.base.database.blockchain.BlockChain
 import org.vibrant.core.node.RemoteNode
-import org.vibrant.example.chat.base.models.BaseAccountMetaDataModel
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.node.BaseMiner
 import org.vibrant.example.chat.base.node.Node
-import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.io.File
@@ -62,7 +61,7 @@ class Chat(private val isMiner: Boolean = false){
 
     init {
         this.node.start()
-        this.node.chain.addNewBlockListener(object : BaseBlockChainProducer.NewBlockListener() {
+        this.node.chain.addNewBlockListener(object : BlockChain.NewBlockListener<BaseBlockModel> {
             override fun nextBlock(blockModel: BaseBlockModel) {
                 this@Chat.listeners.forEach{
                     val response = jacksonObjectMapper().writeValueAsString(blockModel)
