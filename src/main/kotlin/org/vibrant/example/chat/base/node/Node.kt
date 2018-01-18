@@ -1,10 +1,10 @@
 package org.vibrant.example.chat.base.node
 
 import org.vibrant.base.node.JSONRPCNode
+import org.vibrant.base.rpc.json.JSONRPCResponse
 import org.vibrant.core.algorithm.SignatureProducer
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.example.chat.base.BaseJSONSerializer
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.models.*
 import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer

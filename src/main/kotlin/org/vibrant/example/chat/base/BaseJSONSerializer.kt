@@ -5,8 +5,8 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.vibrant.base.rpc.json.JSONRPCEntity
 import org.vibrant.base.rpc.json.JSONRPCRequest
+import org.vibrant.base.rpc.json.JSONRPCResponse
 
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.models.BaseBlockChainModel
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel

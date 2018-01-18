@@ -2,8 +2,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.base.rpc.json.JSONRPCRequest
+import org.vibrant.base.rpc.json.JSONRPCResponse
 
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
 import org.vibrant.example.chat.base.util.serialize
 
 class TestJSONRPC {

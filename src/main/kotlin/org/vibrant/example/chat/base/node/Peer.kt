@@ -4,7 +4,8 @@ package org.vibrant.example.chat.base.node
 import org.vibrant.base.http.HTTPJsonRPCPeer
 import org.vibrant.base.rpc.json.JSONRPCRequest
 import org.vibrant.core.node.RemoteNode
-import org.vibrant.example.chat.base.jsonrpc.JSONRPCResponse
+import org.vibrant.base.rpc.json.JSONRPCResponse
+
 
 class Peer(port: Int, rpc: BaseJSONRPCProtocol): HTTPJsonRPCPeer(port, rpc){
 
