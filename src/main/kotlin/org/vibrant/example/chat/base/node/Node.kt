@@ -1,5 +1,6 @@
 package org.vibrant.example.chat.base.node
 
+import org.vibrant.base.database.blockchain.BlockChain
 import org.vibrant.base.node.JSONRPCNode
 import org.vibrant.base.rpc.json.JSONRPCResponse
 import org.vibrant.core.algorithm.SignatureProducer
@@ -8,10 +9,7 @@ import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.*
 import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
-import org.vibrant.example.chat.base.util.HashUtils
-import org.vibrant.example.chat.base.util.deserialize
-import org.vibrant.example.chat.base.util.serialize
-import org.vibrant.example.chat.base.util.stringResult
+import org.vibrant.example.chat.base.util.*
 import java.security.KeyPair
 import java.util.*
 
@@ -26,12 +24,78 @@ open class Node(port: Int) : JSONRPCNode<Peer>() {
 
     internal val chain: BaseBlockChainProducer = BaseBlockChainProducer(difficulty = 2)
 
+    internal var keyPair = AccountUtils.generateKeyPair()
+
     override fun start() {
         this.peer.start()
     }
 
     override fun stop() {
         this.peer.stop()
+    }
+
+
+    private fun getSmartContract(address: String): DeployContractModel? {
+        return this.chain.blocks().flatMap{ it.transactions }.filter {
+            it.payload is DeployContractModel
+        }.map {
+            it.payload as DeployContractModel
+        }.findLast {
+            it.contract.address == address
+        }
+    }
+
+    private fun getSmartContractOf(address: String): DeployContractModel? {
+        return this.chain.blocks().flatMap{ it.transactions }.filter {
+            it.payload is DeployContractModel
+        }.map {
+            it.payload as DeployContractModel
+        }.findLast {
+            it.contract.author == address
+        }
+    }
+
+    init {
+        this.chain.addNewBlockListener(object: BlockChain.NewBlockListener<BaseBlockModel>{
+            override fun nextBlock(blockModel: BaseBlockModel) {
+                logger.info { "On next blockkkk" }
+                blockModel.transactions.forEach{ transaction ->
+                    when(transaction.payload){
+                        is TriggerContractModel -> {
+                            println("trigger ${transaction.payload}")
+                            val contractAddress = transaction.to
+                            val contract = getSmartContract(contractAddress)
+                            if (contract != null) {
+                                if(contract.contract.triggerWord == (transaction.payload.message.payload as BaseMessageModel).content && contract.contract.author == transaction.payload.message.to){
+                                    println("Trigger worked, responding...")
+                                    this@Node.message(
+                                            transaction.payload.message.from,
+                                            contract.contract.response,
+                                            keyPair
+                                    )
+                                }
+                            }
+                        }
+                        is BaseMessageModel -> {
+                            // we need to trigger smart contract
+                            val c = getSmartContractOf(transaction.to)
+                            if (c != null) {
+                                logger.info { "Triggering contract..." }
+                                this@Node.triggerContract(
+                                        c.contract.address,
+                                        transaction,
+                                        this@Node.keyPair
+                                )
+                                logger.info { "Triggered contract!" }
+                            }
+                        }
+                        else -> {
+                            //don't care
+                        }
+                    }
+                }
+            }
+        })
     }
 
     override fun connect(remoteNode: RemoteNode): Boolean {
@@ -48,14 +112,14 @@ open class Node(port: Int) : JSONRPCNode<Peer>() {
         if(localLatestBlock != lastBlock){
             logger.info { "My chain is not in sync with peer $remoteNode" }
             when {
-                // next block
+            // next block
                 lastBlock.index - localLatestBlock.index == 1L && lastBlock.prevHash == localLatestBlock.hash -> {
                     this@Node.chain.addBlock(
                             lastBlock
                     )
                     logger.info { "I just got next block. Chain good: ${chain.checkIntegrity()}" }
                 }
-                // block is ahead
+            // block is ahead
                 lastBlock.index > localLatestBlock.index -> {
                     logger.info { "My chain is behind, requesting full chain" }
                     val chainResponse = this@Node.request(
@@ -75,7 +139,7 @@ open class Node(port: Int) : JSONRPCNode<Peer>() {
                         logger.info { "Received chain is not fine, I ignore it" }
                     }
                 }
-                // block is behind
+            // block is behind
                 else -> {
                     logger.info { "My chain is ahead, sending request" }
                     val response = this@Node.request(this.createRequest("syncWithMe", arrayOf()), remoteNode)
@@ -100,8 +164,22 @@ open class Node(port: Int) : JSONRPCNode<Peer>() {
 
 
 
-    fun message(to: String, content: String, keyPair: KeyPair) = this.transaction(to, BaseMessageModel(content, Date().time), keyPair)
-    fun changeName(to: String, name: String, keyPair: KeyPair) = this.transaction(to, org.vibrant.example.chat.base.models.BaseAccountMetaDataModel(name, Date().time), keyPair)
+    fun message(to: String, content: String, keyPair: KeyPair, sync: Boolean = true) = this.transaction(to, BaseMessageModel(content, Date().time), keyPair, sync)
+    fun changeName(to: String, name: String, keyPair: KeyPair, sync: Boolean = true) = this.transaction(to, org.vibrant.example.chat.base.models.BaseAccountMetaDataModel(name, Date().time), keyPair, sync)
+    fun deployContract(contract: EchoHelloContract, keyPair: KeyPair, sync: Boolean = true): List<JSONRPCResponse<*>> {
+        return this.transaction(
+                contract.address,
+                DeployContractModel(contract, Date().time),
+                keyPair, sync
+        )
+    }
+    fun triggerContract(contract: String, message: BaseTransactionModel, keyPair: KeyPair, sync: Boolean = true): List<JSONRPCResponse<*>> {
+        return this.transaction(
+                contract,
+                TriggerContractModel(message, Date().time),
+                keyPair, sync
+        )
+    }
 
 
     private fun createTransaction(to: String, payload: TransactionPayload, keyPair: KeyPair): BaseTransactionModel {
@@ -118,9 +196,9 @@ open class Node(port: Int) : JSONRPCNode<Peer>() {
         ).produce(BaseJSONSerializer)
     }
 
-    private fun transaction(to: String, payload: TransactionPayload, keyPair: KeyPair): List<JSONRPCResponse<*>>{
+    private fun transaction(to: String, payload: TransactionPayload, keyPair: KeyPair, sync: Boolean = true): List<JSONRPCResponse<*>>{
         val transaction = createTransaction(to, payload, keyPair)
-
+        logger.info { "Transaction prepared: ${BaseJSONSerializer.serializeToString(transaction)}" }
         return this.peer.broadcastMiners(
                 this.createRequest("addTransaction", arrayOf(
                         transaction.serialize()

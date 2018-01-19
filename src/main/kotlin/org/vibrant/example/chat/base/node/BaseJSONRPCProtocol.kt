@@ -19,9 +19,7 @@ open class BaseJSONRPCProtocol(val node: Node): JSONRPC() {
     fun addTransaction(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*> {
         val transaction = BaseJSONSerializer.deserialize(request.params[0].toString().toByteArray()) as BaseTransactionModel
         if(node is BaseMiner){
-            runBlocking {
-                node.addTransaction(transaction)
-            }
+            node.addTransaction(transaction)
         }
         logger.info { "Returning: Block mined!" }
         return JSONRPCResponse(

@@ -38,7 +38,7 @@ dependencies {
 
     compile 'com.github.vibrantkt:core:0.1.8-alpha'
 
-    compile 'com.github.vibrantkt:base:0.2.1-alpha'
+    compile 'com.github.vibrantkt:base:0.2.2-alpha'
 
 
     compile 'io.javalin:javalin:1.2.1'
@@ -59,10 +59,6 @@ kotlin {
     experimental {
         coroutines "enable"
     }
-}
-
-task sampleTest(type: Test, dependsOn: testClasses) {
-    include 'TestBasePeer'
 }
 
 configurations.all {

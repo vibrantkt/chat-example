@@ -93,7 +93,7 @@ class TestCLI {
         )
 
         chat1.handleCommand("transaction ${HashUtils.bytesToHex(miner.keyPair.public.encoded)} hello")
-
+        chat1.waitBlock({true})
         assertEquals(
                 miner.node.chain.produce(BaseJSONSerializer),
                 chat1.node.chain.produce(BaseJSONSerializer)
@@ -140,6 +140,7 @@ class TestCLI {
         )
 
         chat1.handleCommand("account NewName")
+        chat1.waitBlock({true})
 
 
 
@@ -197,6 +198,9 @@ class TestCLI {
 
         chat1.handleCommand("transaction ${HashUtils.bytesToHex(chat2.keyPair.public.encoded)} hello")
 
+        chat1.waitBlock({true})
+        chat2.waitBlock({true})
+
 
         assertEquals(
                 miner.node.chain.produce(BaseJSONSerializer),
@@ -238,6 +242,9 @@ class TestCLI {
         }
 
         chat1.handleCommand("transaction ${HashUtils.bytesToHex(chat2.keyPair.public.encoded)} hellothere")
+
+        chat1.waitBlock({true})
+        chat2.waitBlock({true})
 
 
         assertEquals(
@@ -336,6 +343,9 @@ class TestCLI {
                 "true",
                 command(chat1, "transaction ${chat2.hexAddress()} hello!")
         )
+
+        chat1.waitBlock({true})
+        chat2.waitBlock({true})
 
         assertEquals(
                 2,

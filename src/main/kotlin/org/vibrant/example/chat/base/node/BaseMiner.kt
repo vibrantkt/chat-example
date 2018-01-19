@@ -1,9 +1,16 @@
 package org.vibrant.example.chat.base.node
 
+import kotlinx.coroutines.experimental.Deferred
+import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.newSingleThreadContext
+import kotlinx.coroutines.experimental.runBlocking
+import mu.KotlinLogging
 import org.vibrant.example.chat.base.BaseJSONSerializer
+import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.util.serialize
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.coroutines.experimental.suspendCoroutine
 
 class BaseMiner(port: Int) : Node(port){
@@ -12,41 +19,67 @@ class BaseMiner(port: Int) : Node(port){
     private val miner = Miner(this)
 
 
-    suspend fun addTransaction(transactionModel: BaseTransactionModel) = this.miner.addTransaction(transactionModel)
+    fun addTransaction(transactionModel: BaseTransactionModel){
+        this.miner.addTransaction(transactionModel)
+    }
 
-    class Miner(private val baseMiner: BaseMiner){
+    class Miner(private val baseMiner: BaseMiner): EventListener{
 
+        private val logger = KotlinLogging.logger {  }
         private val pendingTransactions = arrayListOf<BaseTransactionModel>()
-        private var isMining = false
+        private var isMining = true
+        private val listeners = arrayListOf<(BaseBlockModel) -> Unit>()
 
-        suspend fun addTransaction(transactionModel: BaseTransactionModel) = suspendCoroutine<Unit> {
+        private var minerLoop: Deferred<Unit>? = async {
+            this@Miner.mine()
+        }
+
+        private fun blockMined(blockModel: BaseBlockModel){
+            logger.info { "Block mined $blockModel" }
+//            this.listeners.toList().forEach{
+//                        try{
+//                            it.invoke(blockModel)
+//                        } catch (e: Exception){}
+//                    }
+//            this.listeners.clear()
+        }
+
+        fun addTransaction(transactionModel: BaseTransactionModel){
             this@Miner.pendingTransactions.add(transactionModel)
-            if(!isMining){
-                this@Miner.mine()
-                it.resume(Unit)
-            }
+            logger.info { "Adding transaction..." }
         }
 
         private fun mine(){
-            isMining = true
-            val timestamp = Date().time
-            val block = baseMiner.chain.addBlock(baseMiner.chain.createBlock(
-                    this.pendingTransactions,
-                    BaseJSONSerializer,
-                    timestamp = timestamp
-            ))
-            baseMiner.logger.info { "Block mined" }
-            this.pendingTransactions.clear()
-            baseMiner.logger.info { "Broadcasting this block..." }
-            val response = baseMiner.peer.broadcast(baseMiner.createRequest(
-                    "newBlock",
-                    arrayOf(block.serialize())
-            ))
-            baseMiner.logger.info { "Awaited this shit! $response" }
-            if(this.pendingTransactions.isNotEmpty()){
-                this.mine()
+            async(newSingleThreadContext("miner loop")){
+                while(this@Miner.isMining){
+                    val timestamp = Date().time
+                    val selectedTransactions = this@Miner.pendingTransactions.toList()
+                    if(selectedTransactions.isNotEmpty()){
+                        logger.info { "Got pending transactions" }
+
+                        val block = baseMiner.chain.addBlock(baseMiner.chain.createBlock(
+                                selectedTransactions,
+                                BaseJSONSerializer,
+                                timestamp = timestamp
+                        ))
+
+
+                        selectedTransactions.forEach { this@Miner.pendingTransactions.remove(it) }
+
+
+                        logger.info { "Broadcasting" }
+
+                        val response = baseMiner.peer.broadcast(baseMiner.createRequest(
+                                "newBlock",
+                                arrayOf(block.serialize())
+                        ))
+
+                        logger.info { "Broadcasted" }
+                        this@Miner.blockMined(block)
+                        baseMiner.logger.info { "Awaited this shit! $response" }
+                    }
+                }
             }
-            isMining = false
         }
     }
 }

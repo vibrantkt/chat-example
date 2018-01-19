@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.javalin.Javalin
 import io.javalin.embeddedserver.Location
 import io.javalin.embeddedserver.jetty.websocket.WsSession
+import kotlinx.coroutines.experimental.runBlocking
 import mu.KotlinLogging
 import org.vibrant.base.database.blockchain.BlockChain
 import org.vibrant.core.node.RemoteNode
@@ -17,6 +18,7 @@ import java.io.File
 import java.net.Socket
 import java.security.KeyPair
 import java.util.*
+import kotlin.coroutines.experimental.suspendCoroutine
 
 class Chat(private val isMiner: Boolean = false){
 
@@ -26,34 +28,33 @@ class Chat(private val isMiner: Boolean = false){
 
     internal var keyPair = AccountUtils.generateKeyPair()
 
-
     internal val listeners = arrayListOf<WsSession>()
 
     val http = Javalin.create().ws("/event"){ ws ->
-        ws.onConnect { session -> this@Chat.listeners.add(session) }
-        ws.onMessage { _, message ->
-            logger.info { "Got message from ws client $message" }
-        }
-        ws.onClose { session, _, _ -> this@Chat.listeners.remove(session) }
-        ws.onError { session, _ -> this@Chat.listeners.remove(session) }
-    }.get("blockchain"){ ctx ->
-        val response = jacksonObjectMapper().writeValueAsString(node.chain.produce(BaseJSONSerializer))
-        ctx.result(response)
-    }.get("account"){ ctx ->
-        val map = hashMapOf<String, Any>()
-        map["public"] = this@Chat.hexAddress()
-        map["peers"] = this.node.peer.peers
-        map["miners"] = this.node.peer.miners
-        val response = jacksonObjectMapper().writeValueAsString(map)
-        ctx.result(response)
-    }.post("command"){ ctx ->
-        val map: HashMap<String, Any> = jacksonObjectMapper().readValue(ctx.body(), object : TypeReference<Map<String, Any>>(){})
-        this@Chat.handleCommand(map["command"].toString())
-        ctx.result("true")
-    }.enableStaticFiles(
-            Chat::class.java.classLoader.getResource("html").toString().substring(5),
-            Location.EXTERNAL
-    ).port(node.peer.port + 1000).start()
+                ws.onConnect { session -> this@Chat.listeners.add(session) }
+                ws.onMessage { _, message ->
+                    logger.info { "Got message from ws client $message" }
+                }
+                ws.onClose { session, _, _ -> this@Chat.listeners.remove(session) }
+                ws.onError { session, _ -> this@Chat.listeners.remove(session) }
+            }.get("blockchain"){ ctx ->
+                val response = jacksonObjectMapper().writeValueAsString(node.chain.produce(BaseJSONSerializer))
+                ctx.result(response)
+            }.get("account"){ ctx ->
+                val map = hashMapOf<String, Any>()
+                map["public"] = this@Chat.hexAddress()
+                map["peers"] = this.node.peer.peers
+                map["miners"] = this.node.peer.miners
+                val response = jacksonObjectMapper().writeValueAsString(map)
+                ctx.result(response)
+            }.post("command"){ ctx ->
+                val map: HashMap<String, Any> = jacksonObjectMapper().readValue(ctx.body(), object : TypeReference<Map<String, Any>>(){})
+                this@Chat.handleCommand(map["command"].toString())
+                ctx.result("true")
+            }.enableStaticFiles(
+                    Chat::class.java.classLoader.getResource("html").toString().substring(5),
+                    Location.EXTERNAL
+            ).port(node.peer.port + 1000).start()
 
     internal fun hexAddress(): String{
         return HashUtils.bytesToHex(keyPair.public.encoded!!)
@@ -75,6 +76,7 @@ class Chat(private val isMiner: Boolean = false){
 
     fun setAccount(keyPair: KeyPair){
         this.keyPair = keyPair
+        this.node.keyPair = keyPair
         logger.info { "Account: ${this@Chat.hexAddress()}" }
     }
 
@@ -133,5 +135,22 @@ class Chat(private val isMiner: Boolean = false){
 
     fun stop(){
         this.http.stop()
+    }
+
+    fun waitBlock(predicate: (BaseBlockModel) -> Boolean){
+        runBlocking {
+            suspendCoroutine<Unit> { c ->
+                this@Chat.node.chain.addNewBlockListener(object: BlockChain.NewBlockListener<BaseBlockModel>{
+                    override fun nextBlock(blockModel: BaseBlockModel) {
+                        if(predicate(blockModel)) {
+                            try {
+                                c.resume(Unit)
+                            } catch (e: Exception) {
+                            }
+                        }
+                    }
+                })
+            }
+        }
     }
 }

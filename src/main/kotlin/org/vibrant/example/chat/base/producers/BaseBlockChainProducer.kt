@@ -76,12 +76,4 @@ class BaseBlockChainProducer(val difficulty: Int = 1) : InMemoryBlockChain<BaseB
         return this.blocks
     }
 
-
-
-    abstract class NewBlockListener{
-        abstract fun nextBlock(blockModel: BaseBlockModel)
-    }
-
-
-
 }
