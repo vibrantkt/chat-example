@@ -107,59 +107,10 @@ open class Node(port: Int) : JSONRPCNode<Peer>() {
         return super.connect(remoteNode)
     }
 
-    fun handleLastBlock(lastBlock: BaseBlockModel, remoteNode: RemoteNode){
-        val localLatestBlock = this@Node.chain.latestBlock()
-        if(localLatestBlock != lastBlock){
-            logger.info { "My chain is not in sync with peer $remoteNode" }
-            when {
-            // next block
-                lastBlock.index - localLatestBlock.index == 1L && lastBlock.prevHash == localLatestBlock.hash -> {
-                    this@Node.chain.addBlock(
-                            lastBlock
-                    )
-                    logger.info { "I just got next block. Chain good: ${chain.checkIntegrity()}" }
-                }
-            // block is ahead
-                lastBlock.index > localLatestBlock.index -> {
-                    logger.info { "My chain is behind, requesting full chain" }
-                    val chainResponse = this@Node.request(
-                            this.createRequest("getFullChain", arrayOf()),
-                            remoteNode
-                    )
-
-                    val model = chainResponse.deserialize<BaseBlockChainModel>()
-                    val tmpChain = BaseBlockChainProducer.instantiate(model)
-                    val chainOK = tmpChain.checkIntegrity()
-
-                    if(chainOK){
-                        logger.info { "Received chain is fine, replacing" }
-                        this@Node.chain.dump(model)
-                        logger.info { "Received chain is fine, replaced" }
-                    }else{
-                        logger.info { "Received chain is not fine, I ignore it" }
-                    }
-                }
-            // block is behind
-                else -> {
-                    logger.info { "My chain is ahead, sending request" }
-                    val response = this@Node.request(this.createRequest("syncWithMe", arrayOf()), remoteNode)
-                    logger.info { "Got response! $response" }
-                }
-            }
-        }else{
-            logger.info { "Chain in sync with peer $remoteNode" }
-        }
-    }
 
 
     fun synchronize(remoteNode: RemoteNode){
-        logger.info { "Requesting and waiting for response get last block" }
-        val response = this@Node.request(createRequest("getLastBlock", arrayOf()), remoteNode)
-        logger.info { "Got last block ${response.result}" }
-        val lastBlock = response.deserialize<BaseBlockModel>()
-        logger.info { "Last block is $lastBlock" }
-        this@Node.handleLastBlock(lastBlock, remoteNode)
-        logger.info { "Handled" }
+        this.rpc.synchronize(remoteNode)
     }
 
 
@@ -196,10 +147,11 @@ open class Node(port: Int) : JSONRPCNode<Peer>() {
         ).produce(BaseJSONSerializer)
     }
 
-    private fun transaction(to: String, payload: TransactionPayload, keyPair: KeyPair, sync: Boolean = true): List<JSONRPCResponse<*>>{
+    private fun transaction(to: String, payload: TransactionPayload, keyPair: KeyPair, @Suppress("UNUSED_PARAMETER") sync: Boolean = true): List<JSONRPCResponse<*>>{
         val transaction = createTransaction(to, payload, keyPair)
         logger.info { "Transaction prepared: ${BaseJSONSerializer.serializeToString(transaction)}" }
-        return this.peer.broadcastMiners(
+        logger.info { this.peer.peers }
+        return this.peer.broadcast(
                 this.createRequest("addTransaction", arrayOf(
                         transaction.serialize()
                 ))

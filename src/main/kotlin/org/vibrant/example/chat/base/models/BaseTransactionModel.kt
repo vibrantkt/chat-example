@@ -4,6 +4,7 @@ package org.vibrant.example.chat.base.models
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.annotation.JsonTypeName
+import org.vibrant.base.database.blockchain.models.HashedTransaction
 import org.vibrant.base.database.blockchain.models.TransactionModel
 
 /***
@@ -18,6 +19,7 @@ import org.vibrant.base.database.blockchain.models.TransactionModel
 data class BaseTransactionModel(
         val from: String,
         val to: String,
+        override val hash: String,
         val payload: TransactionPayload,
         val signature: String
-): TransactionModel()
+): HashedTransaction(hash)

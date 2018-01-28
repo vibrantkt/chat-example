@@ -30,7 +30,7 @@ class Chat(private val isMiner: Boolean = false){
 
     internal val listeners = arrayListOf<WsSession>()
 
-    val http = Javalin.create().ws("/event"){ ws ->
+    val http: Javalin = Javalin.create().ws("/event"){ ws ->
                 ws.onConnect { session -> this@Chat.listeners.add(session) }
                 ws.onMessage { _, message ->
                     logger.info { "Got message from ws client $message" }

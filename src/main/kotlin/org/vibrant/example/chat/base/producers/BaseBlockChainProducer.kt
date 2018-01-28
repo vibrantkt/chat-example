@@ -32,7 +32,7 @@ class BaseBlockChainProducer(val difficulty: Int = 1) : InMemoryBlockChain<BaseB
 
     override fun checkIntegrity(): Boolean{
         this.blocks.reduce({a,b ->
-            if(a.hash == b.prevHash){
+            if(a.hash == b.previousHash){
                 return@reduce b
             }else{
                 return false
@@ -54,9 +54,9 @@ class BaseBlockChainProducer(val difficulty: Int = 1) : InMemoryBlockChain<BaseB
 
 
 
-    fun dump(blockChainModel: BaseBlockChainModel){
+    override fun dump(copy: BaseBlockChainModel){
         this.blocks().clear()
-        this.blocks().addAll(blockChainModel.blocks)
+        this.blocks().addAll(copy.blocks)
         this.notifyNewBlock()
     }
 

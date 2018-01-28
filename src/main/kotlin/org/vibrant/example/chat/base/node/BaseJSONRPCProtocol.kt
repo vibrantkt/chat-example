@@ -3,76 +3,58 @@
 package org.vibrant.example.chat.base.node
 
 import kotlinx.coroutines.experimental.runBlocking
+import mu.KLogger
+import mu.KotlinLogging
+import org.vibrant.base.database.blockchain.BlockChain
+import org.vibrant.base.database.blockchain.InMemoryBlockChain
+import org.vibrant.base.database.blockchain.InstantiateBlockChain
 import org.vibrant.base.rpc.json.JSONRPC
+import org.vibrant.base.rpc.json.JSONRPCBlockChainSynchronization
 import org.vibrant.base.rpc.json.JSONRPCRequest
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.base.rpc.json.JSONRPCResponse
+import org.vibrant.core.ConcreteModelSerializer
+import org.vibrant.example.chat.base.models.BaseBlockChainModel
+import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 
 import org.vibrant.example.chat.base.util.serialize
+import org.vibrant.example.chat.base.util.serializerFor
 
-open class BaseJSONRPCProtocol(val node: Node): JSONRPC() {
+open class BaseJSONRPCProtocol(override val node: Node): JSONRPC(),
+        JSONRPCBlockChainSynchronization<Peer, BaseBlockModel, BaseTransactionModel, BaseBlockChainModel> {
 
-    @JSONRPCMethod
-    fun addTransaction(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*> {
-        val transaction = BaseJSONSerializer.deserialize(request.params[0].toString().toByteArray()) as BaseTransactionModel
-        if(node is BaseMiner){
-            node.addTransaction(transaction)
+    override val blockSerializer: ConcreteModelSerializer<BaseBlockModel> = serializerFor()
+
+    override val broadcastedBlocks: ArrayList<String> = arrayListOf()
+
+    override val broadcastedTransactions: ArrayList<String> = arrayListOf()
+
+    override val chain: InMemoryBlockChain<BaseBlockModel, BaseBlockChainModel>
+        get() = node.chain
+
+    override val chainSerializer: ConcreteModelSerializer<BaseBlockChainModel> = serializerFor()
+
+    override val logger: KLogger = KotlinLogging.logger{}
+
+    override val modelToProducer: InstantiateBlockChain<BaseBlockModel, BaseBlockChainModel> = object: InstantiateBlockChain<BaseBlockModel, BaseBlockChainModel>{
+            override fun asBlockChainProducer(model: BaseBlockChainModel): BlockChain<BaseBlockModel, BaseBlockChainModel> {
+                val producer = BaseBlockChainProducer()
+                producer.blocks().clear()
+                producer.blocks().addAll(model.blocks)
+                return producer
+            }
+
         }
-        logger.info { "Returning: Block mined!" }
-        return JSONRPCResponse(
-                result = node is BaseMiner,
-                error = null,
-                id = request.id
-        )
-    }
 
+    override val transactionSerializer: ConcreteModelSerializer<BaseTransactionModel> = serializerFor()
 
-    @JSONRPCMethod
-    fun getLastBlock(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
-        return JSONRPCResponse(
-                result = node.chain.latestBlock().serialize(),
-                error = null,
-                id = request.id
-        )
-    }
-
-
-    @JSONRPCMethod
-    fun newBlock(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
-
-        val blockModel = BaseJSONSerializer.deserialize(request.params[0].toString().toByteArray()) as BaseBlockModel
-        node.handleLastBlock(blockModel, remoteNode)
-        return JSONRPCResponse(
-                result = node.chain.latestBlock().serialize(),
-                error = null,
-                id = request.id
-        )
-    }
-
-
-    @JSONRPCMethod
-    fun syncWithMe(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
-        logger.info { "${node.peer.port} Requested sync, starting... " }
-        node.synchronize(remoteNode)
-        logger.info { "Sync finished, responding..." }
-        return JSONRPCResponse(
-                result = true,
-                error = null,
-                id = request.id
-        )
-    }
-
-
-    @JSONRPCMethod
-    fun getFullChain(request: JSONRPCRequest, remoteNode: RemoteNode): JSONRPCResponse<*>{
-        return JSONRPCResponse(
-                result = node.chain.produce(BaseJSONSerializer).serialize(),
-                error = null,
-                id = request.id
-        )
+    override fun handleDistinctTransaction(transaction: BaseTransactionModel) {
+        if(node is BaseMiner){
+            (node as BaseMiner).addTransaction(transaction)
+        }
     }
 
 

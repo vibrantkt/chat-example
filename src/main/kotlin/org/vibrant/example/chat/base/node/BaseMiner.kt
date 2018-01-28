@@ -70,7 +70,7 @@ class BaseMiner(port: Int) : Node(port){
                         logger.info { "Broadcasting" }
 
                         val response = baseMiner.peer.broadcast(baseMiner.createRequest(
-                                "newBlock",
+                                "onNewBlock",
                                 arrayOf(block.serialize())
                         ))
 

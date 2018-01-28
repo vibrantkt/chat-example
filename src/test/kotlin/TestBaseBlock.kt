@@ -65,12 +65,12 @@ class TestBaseBlock {
 
         assertEquals(
                 "prevBlockHash",
-                block.prevHash
+                block.previousHash
         )
 
         val payload =
                 block.index.toString() +
-                        block.prevHash +
+                        block.previousHash +
                         block.timestamp +
                         block.transactions.map{ it.serialize() }.reduceRight({a, b -> a + b}) +
                         block.nonce
@@ -129,7 +129,7 @@ class TestBaseBlock {
         val hash = block.hash
 
         assertEquals(
-                "{\"@type\":\"block\",\"index\":1,\"hash\":\"$hash\",\"prevHash\":\"prevBlockHash\",\"timestamp\":1000,\"transactions\":[{\"@type\":\"transaction\",\"from\":\"User1\",\"to\":\"User2\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello, user2!!\",\"timestamp\":0},\"signature\":\"${transaction1.signature}\"},{\"@type\":\"transaction\",\"from\":\"User2\",\"to\":\"User1\",\"payload\":{\"@type\":\"message\",\"content\":\"Well, hello!\",\"timestamp\":0},\"signature\":\"${transaction2.signature}\"}],\"nonce\":0}",
+                "{\"@type\":\"block\",\"index\":1,\"hash\":\"$hash\",\"previousHash\":\"prevBlockHash\",\"timestamp\":1000,\"transactions\":[{\"@type\":\"transaction\",\"from\":\"User1\",\"to\":\"User2\",\"hash\":\"${transaction1.hash}\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello, user2!!\",\"timestamp\":0},\"signature\":\"${transaction1.signature}\"},{\"@type\":\"transaction\",\"from\":\"User2\",\"to\":\"User1\",\"hash\":\"${transaction2.hash}\",\"payload\":{\"@type\":\"message\",\"content\":\"Well, hello!\",\"timestamp\":0},\"signature\":\"${transaction2.signature}\"}],\"nonce\":0}",
                 block.serialize()
         )
     }

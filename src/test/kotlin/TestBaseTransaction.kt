@@ -108,7 +108,7 @@ class TestBaseTransaction {
 
         val serialized = BaseJSONSerializer.serialize(transaction)
         assertEquals(
-                "{\"@type\":\"transaction\",\"from\":\"yura\",\"to\":\"vasya\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello!\",\"timestamp\":0},\"signature\":\"${transaction.signature}\"}",
+                "{\"@type\":\"transaction\",\"from\":\"yura\",\"to\":\"vasya\",\"hash\":\"${transaction.hash}\",\"payload\":{\"@type\":\"message\",\"content\":\"Hello!\",\"timestamp\":0},\"signature\":\"${transaction.signature}\"}",
                 String(serialized)
         )
     }

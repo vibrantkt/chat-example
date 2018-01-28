@@ -3,9 +3,11 @@ package org.vibrant.example.chat.base.producers
 import org.vibrant.base.database.blockchain.producers.TransactionProducer
 import org.vibrant.core.ModelSerializer
 import org.vibrant.core.algorithm.SignatureProducer
+import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.models.TransactionPayload
 import org.vibrant.example.chat.base.util.HashUtils
+import org.vibrant.example.chat.base.util.serialize
 import java.security.KeyPair
 
 
@@ -30,6 +32,7 @@ open class BaseTransactionProducer(
         return BaseTransactionModel(
                 from,
                 to,
+                HashUtils.bytesToHex(BaseJSONSerializer.serialize(payload) + from.toByteArray() + to.toByteArray()),
                 payload,
                 HashUtils.bytesToHex(
                         signatureProducer.produceSignature((this.from + this.to + String(serializer.serialize(this.payload))).toByteArray(), keyPair)

@@ -11,9 +11,6 @@ class Peer(port: Int, rpc: BaseJSONRPCProtocol): HTTPJsonRPCPeer(port, rpc){
 
     val miners = arrayListOf<RemoteNode>()
 
-    fun broadcastAll(jsonrpcRequest: JSONRPCRequest): List<JSONRPCResponse<*>> {
-        return this.broadcast(jsonrpcRequest, this.peers)
-    }
 
     fun broadcastMiners(jsonrpcRequest: JSONRPCRequest): List<JSONRPCResponse<*>> {
         return this.broadcast(jsonrpcRequest, this.miners)
