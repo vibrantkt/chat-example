@@ -3,8 +3,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.result.Result
-import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.newSingleThreadContext
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.vibrant.example.chat.base.BaseJSONSerializer
@@ -14,9 +12,7 @@ import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.io.File
-import java.util.HashMap
-import java.util.concurrent.CountDownLatch
-import kotlin.coroutines.experimental.suspendCoroutine
+import java.util.*
 
 @Suppress("UNCHECKED_CAST")
 class TestCLI {

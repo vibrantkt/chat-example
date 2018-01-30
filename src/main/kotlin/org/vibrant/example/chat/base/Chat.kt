@@ -7,7 +7,7 @@ import io.javalin.embeddedserver.Location
 import io.javalin.embeddedserver.jetty.websocket.WsSession
 import kotlinx.coroutines.experimental.runBlocking
 import mu.KotlinLogging
-import org.vibrant.base.database.blockchain.BlockChain
+import org.vibrant.core.database.blockchain.BlockChain
 import org.vibrant.core.node.RemoteNode
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.node.BaseMiner

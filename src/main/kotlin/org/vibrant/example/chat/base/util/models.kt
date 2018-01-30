@@ -1,8 +1,9 @@
 package org.vibrant.example.chat.base.util
 
-import org.vibrant.base.rpc.json.JSONRPCResponse
+
 import org.vibrant.core.ConcreteModelSerializer
 import org.vibrant.core.models.Model
+import org.vibrant.core.rpc.json.JSONRPCResponse
 import org.vibrant.example.chat.base.BaseJSONSerializer
 
 fun JSONRPCResponse<*>.stringResult(): String {

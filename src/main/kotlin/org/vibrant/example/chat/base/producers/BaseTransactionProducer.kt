@@ -1,15 +1,16 @@
 package org.vibrant.example.chat.base.producers
 
-import org.vibrant.base.database.blockchain.producers.TransactionProducer
+
 import org.vibrant.core.ModelSerializer
-import org.vibrant.core.algorithm.SignatureProducer
+import org.vibrant.core.producers.TransactionProducer
+
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.models.TransactionPayload
 import org.vibrant.example.chat.base.util.HashUtils
 import org.vibrant.example.chat.base.util.serialize
 import java.security.KeyPair
-
+import org.vibrant.core.hash.SignatureProducer
 
 /***
  * [BaseTransactionModel] producer class

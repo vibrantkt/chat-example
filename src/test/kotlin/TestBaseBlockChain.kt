@@ -6,7 +6,7 @@ import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
-import org.vibrant.core.algorithm.SignatureProducer
+import org.vibrant.core.hash.SignatureProducer
 import org.vibrant.example.chat.base.util.AccountUtils
 import org.vibrant.example.chat.base.util.HashUtils
 import java.security.KeyPair

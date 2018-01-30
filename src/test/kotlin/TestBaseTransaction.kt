@@ -1,7 +1,7 @@
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.vibrant.example.chat.base.producers.BaseTransactionProducer
-import org.vibrant.core.algorithm.SignatureProducer
+import org.vibrant.core.hash.SignatureProducer
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseAccountMetaDataModel
 import org.vibrant.example.chat.base.models.BaseMessageModel
@@ -99,7 +99,7 @@ class TestBaseTransaction {
                 "vasya",
                 BaseMessageModel("Hello!", 0),
                 sender,
-                object : SignatureProducer{
+                object : SignatureProducer {
                     override fun produceSignature(content: ByteArray, keyPair: KeyPair): ByteArray {
                         return HashUtils.signData(content, keyPair)
                     }

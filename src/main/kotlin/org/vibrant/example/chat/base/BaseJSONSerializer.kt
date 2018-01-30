@@ -3,15 +3,16 @@ package org.vibrant.example.chat.base
 import com.fasterxml.jackson.annotation.JsonTypeName
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import org.vibrant.base.rpc.json.JSONRPCEntity
-import org.vibrant.base.rpc.json.JSONRPCRequest
-import org.vibrant.base.rpc.json.JSONRPCResponse
+
 
 import org.vibrant.example.chat.base.models.BaseBlockChainModel
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.core.models.Model
 import org.vibrant.core.ModelSerializer
+import org.vibrant.core.rpc.json.JSONRPCEntity
+import org.vibrant.core.rpc.json.JSONRPCRequest
+import org.vibrant.core.rpc.json.JSONRPCResponse
 import org.vibrant.example.chat.base.models.AbstractBaseModel
 import java.util.HashMap
 
@@ -33,7 +34,7 @@ object BaseJSONSerializer : ModelSerializer(){
                 BaseBlockChainModel::class.java
             }
             else -> {
-                throw kotlin.Exception("Can't deserialize type ${map["@type"]}")
+                throw Exception("Can't deserialize type ${map["@type"]}")
             }
         }
 

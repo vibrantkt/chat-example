@@ -1,6 +1,6 @@
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.vibrant.core.algorithm.SignatureProducer
+import org.vibrant.core.hash.SignatureProducer
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.producers.BaseBlockProducer

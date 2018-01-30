@@ -1,8 +1,7 @@
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.vibrant.base.database.blockchain.BlockChain
-import org.vibrant.base.database.blockchain.models.BlockModel
+import org.vibrant.core.database.blockchain.BlockChain
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.Chat
 import org.vibrant.example.chat.base.models.BaseBlockModel

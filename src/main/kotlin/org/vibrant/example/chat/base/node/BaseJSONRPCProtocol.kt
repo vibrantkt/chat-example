@@ -5,18 +5,18 @@ package org.vibrant.example.chat.base.node
 import kotlinx.coroutines.experimental.runBlocking
 import mu.KLogger
 import mu.KotlinLogging
-import org.vibrant.base.database.blockchain.BlockChain
-import org.vibrant.base.database.blockchain.InMemoryBlockChain
-import org.vibrant.base.database.blockchain.InstantiateBlockChain
-import org.vibrant.base.rpc.json.JSONRPC
-import org.vibrant.base.rpc.json.JSONRPCBlockChainSynchronization
-import org.vibrant.base.rpc.json.JSONRPCRequest
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.core.node.RemoteNode
-import org.vibrant.base.rpc.json.JSONRPCResponse
 import org.vibrant.core.ConcreteModelSerializer
+import org.vibrant.core.database.blockchain.BlockChain
+import org.vibrant.core.database.blockchain.InMemoryBlockChain
+import org.vibrant.core.database.blockchain.InstantiateBlockChain
+import org.vibrant.core.rpc.json.JSONRPC
+import org.vibrant.core.rpc.json.JSONRPCBlockChainSynchronization
+import org.vibrant.core.rpc.json.JSONRPCRequest
+import org.vibrant.core.rpc.json.JSONRPCResponse
 import org.vibrant.example.chat.base.models.BaseBlockChainModel
 import org.vibrant.example.chat.base.producers.BaseBlockChainProducer
 
@@ -39,7 +39,7 @@ open class BaseJSONRPCProtocol(override val node: Node): JSONRPC(),
 
     override val logger: KLogger = KotlinLogging.logger{}
 
-    override val modelToProducer: InstantiateBlockChain<BaseBlockModel, BaseBlockChainModel> = object: InstantiateBlockChain<BaseBlockModel, BaseBlockChainModel>{
+    override val modelToProducer: InstantiateBlockChain<BaseBlockModel, BaseBlockChainModel> = object: InstantiateBlockChain<BaseBlockModel, BaseBlockChainModel> {
             override fun asBlockChainProducer(model: BaseBlockChainModel): BlockChain<BaseBlockModel, BaseBlockChainModel> {
                 val producer = BaseBlockChainProducer()
                 producer.blocks().clear()
