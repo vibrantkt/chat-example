@@ -10,6 +10,5 @@ fun main(args: Array<String>) {
     val isMiner = readLine() == "true"
 
     val client = Chat(isMiner)
-    if (!isMiner)
-        client.setAccount(AccountUtils.generateKeyPair())
+    client.setAccount(AccountUtils.generateKeyPair())
 }
