@@ -13,7 +13,6 @@ import org.vibrant.core.serialization.ModelSerializer
 import org.vibrant.core.rpc.json.JSONRPCEntity
 import org.vibrant.core.rpc.json.JSONRPCRequest
 import org.vibrant.core.rpc.json.JSONRPCResponse
-import org.vibrant.example.chat.base.models.AbstractBaseModel
 import java.util.HashMap
 
 

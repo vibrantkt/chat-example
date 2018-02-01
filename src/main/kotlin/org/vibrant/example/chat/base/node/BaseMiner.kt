@@ -5,8 +5,10 @@ import kotlinx.coroutines.experimental.async
 import kotlinx.coroutines.experimental.newSingleThreadContext
 import kotlinx.coroutines.experimental.runBlocking
 import mu.KotlinLogging
+import org.vibrant.core.database.blockchain.BlockChain
 import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseBlockModel
+import org.vibrant.example.chat.base.models.BaseMessageModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.example.chat.base.util.serialize
 import java.util.*
@@ -33,6 +35,8 @@ class BaseMiner(port: Int) : Node(port){
         private var minerLoop: Deferred<Unit>? = async {
             this@Miner.mine()
         }
+
+
 
         private fun blockMined(blockModel: BaseBlockModel){
             logger.info { "Block mined $blockModel" }
