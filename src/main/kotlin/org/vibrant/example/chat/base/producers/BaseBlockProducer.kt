@@ -1,6 +1,6 @@
 package org.vibrant.example.chat.base.producers
 
-import org.vibrant.core.ModelSerializer
+import org.vibrant.core.serialization.ModelSerializer
 import org.vibrant.core.producers.BlockProducer
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel

@@ -9,7 +9,7 @@ import org.vibrant.example.chat.base.models.BaseBlockChainModel
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.core.models.Model
-import org.vibrant.core.ModelSerializer
+import org.vibrant.core.serialization.ModelSerializer
 import org.vibrant.core.rpc.json.JSONRPCEntity
 import org.vibrant.core.rpc.json.JSONRPCRequest
 import org.vibrant.core.rpc.json.JSONRPCResponse

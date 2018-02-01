@@ -1,7 +1,7 @@
 package org.vibrant.example.chat.base.util
 
 
-import org.vibrant.core.ConcreteModelSerializer
+import org.vibrant.core.serialization.ConcreteModelSerializer
 import org.vibrant.core.models.Model
 import org.vibrant.core.rpc.json.JSONRPCResponse
 import org.vibrant.example.chat.base.BaseJSONSerializer
@@ -14,7 +14,6 @@ fun <T: Model>JSONRPCResponse<*>.deserialize(): T {
     @Suppress("UNCHECKED_CAST")
     return BaseJSONSerializer.deserialize(this.result.toString().toByteArray()) as T
 }
-
 
 
 fun Model.serialize(): String {

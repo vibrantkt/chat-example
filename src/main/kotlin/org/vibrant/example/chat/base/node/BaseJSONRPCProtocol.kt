@@ -9,7 +9,7 @@ import org.vibrant.example.chat.base.BaseJSONSerializer
 import org.vibrant.example.chat.base.models.BaseBlockModel
 import org.vibrant.example.chat.base.models.BaseTransactionModel
 import org.vibrant.core.node.RemoteNode
-import org.vibrant.core.ConcreteModelSerializer
+import org.vibrant.core.serialization.ConcreteModelSerializer
 import org.vibrant.core.database.blockchain.BlockChain
 import org.vibrant.core.database.blockchain.InMemoryBlockChain
 import org.vibrant.core.database.blockchain.InstantiateBlockChain
